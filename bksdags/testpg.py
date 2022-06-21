@@ -6,7 +6,7 @@ from airflow.hooks.postgres_hook import PostgresHook
 from airflow.models import Variable
 #from airflow.operators.bash import BashOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-
+import csv
 
 def get_iris_data():
     sql_stmt = "SELECT * FROM iris"
@@ -47,7 +47,10 @@ def process_iris_data(ti):
         (iris['l'] > 5)
     ]
     #iris = iris.drop('id', axis=1)
-    iris.to_csv(Variable.get('tmp_iris_csv_location'), index=False)
+    #iris.to_csv(Variable.get('tmp_iris_csv_location'), index=False)
+    with open(Variable.get('tmp_iris_csv_location'), 'w') as fp:
+            a = csv.writer(fp, quoting = csv.QUOTE_MINIMAL, delimiter = '|')
+            a.writerows(iris)
 
 
 with DAG(

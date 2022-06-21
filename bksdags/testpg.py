@@ -41,16 +41,12 @@ def process_iris_data(ti):
 
     iris = pd.DataFrame(
         data=iris[0],
-        columns=['iris_id', 'iris_sepal_length', 'iris_sepal_width',
-                 'iris_petal_length', 'iris_petal_width', 'iris_variety']
+        columns=['id', 'w', 'l', 'd']
     )
     iris = iris[
-        (iris['iris_sepal_length'] > 5) &
-        (iris['iris_sepal_width'] == 3) &
-        (iris['iris_petal_length'] > 3) &
-        (iris['iris_petal_width'] == 1.5)
+        (iris['l'] > 5)
     ]
-    iris = iris.drop('iris_id', axis=1)
+    #iris = iris.drop('id', axis=1)
     iris.to_csv(Variable.get('tmp_iris_csv_location'), index=False)
 
 

@@ -10,7 +10,7 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-def getandload_data(sql_str,tb_name): 
+def getandload_data(**kwargs): 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
     db2database = config['DB2']['database']
@@ -23,7 +23,7 @@ def getandload_data(sql_str,tb_name):
     con = "DATABASE=%s;HOSTNAME=%s;PORT=%s;PROTOCOL=%s;UID=%s;PWD=%s;" % (db2database,db2host,db2port,db2protocal,db2uid,db2pwd)
     start_time = time.time()
     # Extract & Load MACHINE
-    sql = sql_str
+    sql = kwargs['sql_str']
     conn = db.connect(con,'','')
     pd_conn = dbi.Connection(conn)
     # Extract to Data Frame
@@ -42,13 +42,13 @@ def getandload_data(sql_str,tb_name):
     conn_str = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (pguid,pgpwd,pghost,pgport,pgdatabase)
     engine = create_engine(conn_str,client_encoding="utf8")
     # Load to DB-LAKE not transfrom
-    df.to_sql(tb_name, engine, index=False, if_exists='replace')
+    df.to_sql(kwargs['tb_name'], engine, index=False, if_exists='replace')
     return True
 
 
 with DAG(
-    dag_id='Machine_db2postgres_dag',
-    schedule_interval='@daily',
+    dag_id='Kopen_Master_db2postgres_dag',
+    schedule_interval='0 6-18/2 * * *',
     start_date=datetime(year=2022, month=6, day=1),
     catchup=False
 ) as dag:
@@ -57,7 +57,8 @@ with DAG(
     task_ETL_Kopen_Machine_data = PythonOperator(
         task_id='etl_kopen_machine_data',
         provide_context=True,
-        python_callable=getandload_data("select * from unit_retain","kp_machine")
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from unit_retain", 'tb_name': "kp_machine"}
     )
     
     task_ETL_Kopen_Machine_data

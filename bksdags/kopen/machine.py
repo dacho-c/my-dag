@@ -10,9 +10,7 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-ds = []
-
-def get_machine_data(): 
+def get_machine_data(**kwargs): 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
     db2database = config['DB2']['database']
@@ -32,11 +30,11 @@ def get_machine_data():
     df = pd.read_sql(sql, pd_conn)
     # Close Connection
     db.close(conn)
-    ds = df
-    return True
+    kwargs['ti'].xcom_push(key='value from get mc', value=df)
 
-def save_machine_data():
-    tb = ds
+def save_machine_data(**kwargs):
+    ti = kwargs['ti1']
+    tb = ti.xcom_pull(key=None, task_ids='process_machine_data')
 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
@@ -52,16 +50,17 @@ def save_machine_data():
     tb.to_sql('KP_MACHINE', engine, index=False, if_exists='replace')
     return True
 
-def process_machine_data():
-    tb = ds
+def process_machine_data(**kwargs):
+    ti = kwargs['ti']
+    tb = ti.xcom_pull(key=None, task_ids='get_kopen_machine_data')
     if not tb:
         raise Exception('No data.')
 
     tb = tb.drop('UR_ENAME', axis=1)
-    return tb
+    kwargs['ti1'].xcom_push(key='value from process mc', value=tb)
 
 
-with DAG(
+with DAG(**kwargs
     dag_id='Machine_db2postgres_dag',
     schedule_interval='@daily',
     start_date=datetime(year=2022, month=6, day=1),
@@ -71,13 +70,14 @@ with DAG(
     # 1. Get the Machine data from a table in Kopen DB2
     task_get_Kopen_Machine_data = PythonOperator(
         task_id='get_kopen_machine_data',
-        python_callable=get_machine_data,
-        do_xcom_push=True
+        provide_context=True,
+        python_callable=get_machine_data
     )
 
     # 2. Process the Machine data
     task_process_Machine_data = PythonOperator(
         task_id='process_machine_data',
+        provide_context=True,
         python_callable=process_machine_data
     )
 
@@ -91,6 +91,7 @@ with DAG(
     # 4. Save to Postgres
     task_load_Machine_data = PythonOperator(
         task_id='load_machine_data',
+        provide_context=True,
         python_callable=save_machine_data
     )
 

@@ -64,7 +64,7 @@ with DAG(
     task_truncate_table = PostgresOperator(
         task_id='truncate_tgt_table',
         postgres_conn_id='postgres',
-        sql="TRUNCATE TABLE KP_MACHINE"
+        sql="TRUNCATE TABLE public.KP_MACHINE"
     )
     
     task_truncate_table >> task_get_Kopen_Machine_data

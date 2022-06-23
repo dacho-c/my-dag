@@ -42,7 +42,7 @@ def getandload_machine_data(**kwargs):
     conn_str = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (pguid,pgpwd,pghost,pgport,pgdatabase)
     engine = create_engine(conn_str,client_encoding="utf8")
     # Load to DB-LAKE not transfrom
-    tb.to_sql('KP_MACHINE', engine, index=False, if_exists='replace')
+    df.to_sql('kp_machine', engine, index=False, if_exists='replace')
     return True
 
 
@@ -54,17 +54,10 @@ with DAG(
 ) as dag:
 
     # 1. Get the Machine data from a table in Kopen DB2
-    task_get_Kopen_Machine_data = PythonOperator(
-        task_id='get_kopen_machine_data',
+    task_getandload_Kopen_Machine_data = PythonOperator(
+        task_id='getandload_kopen_machine_data',
         provide_context=True,
         python_callable=getandload_machine_data
     )
-
-    # 0. Truncate table in Postgres
-    task_truncate_table = PostgresOperator(
-        task_id='truncate_tgt_table',
-        postgres_conn_id='postgres',
-        sql="TRUNCATE TABLE iris"
-    )
     
-    task_truncate_table >> task_get_Kopen_Machine_data
+    task_getandload_Kopen_Machine_data

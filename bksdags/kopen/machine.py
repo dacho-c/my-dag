@@ -10,7 +10,7 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-def get_machine_data(**kwargs): 
+def getandload_machine_data(**kwargs): 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
     db2database = config['DB2']['database']
@@ -30,14 +30,9 @@ def get_machine_data(**kwargs):
     df = pd.read_sql(sql, pd_conn)
     # Close Connection
     db.close(conn)
-    kwargs['ti'].xcom_push(key='value from get mc', value=df)
+    
+    df = df.drop('UR_ENAME', axis=1)
 
-def save_machine_data(**kwargs):
-    ti = kwargs['ti1']
-    tb = ti.xcom_pull(key=None, task_ids='process_machine_data')
-
-    config = configparser.ConfigParser()
-    config.read(Variable.get('db2pg_config'))
     pgdatabase = config['PG']['database']
     pghost = config['PG']['host']
     pgport = config['PG']['port']
@@ -49,15 +44,6 @@ def save_machine_data(**kwargs):
     # Load to DB-LAKE not transfrom
     tb.to_sql('KP_MACHINE', engine, index=False, if_exists='replace')
     return True
-
-def process_machine_data(**kwargs):
-    ti = kwargs['ti']
-    tb = ti.xcom_pull(key=None, task_ids='get_kopen_machine_data')
-    if not tb:
-        raise Exception('No data.')
-
-    tb = tb.drop('UR_ENAME', axis=1)
-    kwargs['ti1'].xcom_push(key='value from process mc', value=tb)
 
 
 with DAG(
@@ -71,29 +57,14 @@ with DAG(
     task_get_Kopen_Machine_data = PythonOperator(
         task_id='get_kopen_machine_data',
         provide_context=True,
-        python_callable=get_machine_data
+        python_callable=getandload_machine_data
     )
 
-    # 2. Process the Machine data
-    task_process_Machine_data = PythonOperator(
-        task_id='process_machine_data',
-        provide_context=True,
-        python_callable=process_machine_data
-    )
-
-    # 3. Truncate table in Postgres
+    # 0. Truncate table in Postgres
     task_truncate_table = PostgresOperator(
         task_id='truncate_tgt_table',
         postgres_conn_id='postgres',
         sql="TRUNCATE TABLE KP_MACHINE"
     )
-
-    # 4. Save to Postgres
-    task_load_Machine_data = PythonOperator(
-        task_id='load_machine_data',
-        provide_context=True,
-        python_callable=save_machine_data
-    )
-
     
-    task_get_Kopen_Machine_data >> task_process_Machine_data >> task_truncate_table >> task_load_Machine_data
+    task_truncate_table >> task_get_Kopen_Machine_data

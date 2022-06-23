@@ -60,7 +60,7 @@ def process_machine_data(**kwargs):
     kwargs['ti1'].xcom_push(key='value from process mc', value=tb)
 
 
-with DAG(**kwargs
+with DAG(
     dag_id='Machine_db2postgres_dag',
     schedule_interval='@daily',
     start_date=datetime(year=2022, month=6, day=1),

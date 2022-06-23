@@ -10,7 +10,7 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-def getandload_machine_data(**kwargs): 
+def getandload_data(sql_str,tb_name): 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
     db2database = config['DB2']['database']
@@ -23,7 +23,7 @@ def getandload_machine_data(**kwargs):
     con = "DATABASE=%s;HOSTNAME=%s;PORT=%s;PROTOCOL=%s;UID=%s;PWD=%s;" % (db2database,db2host,db2port,db2protocal,db2uid,db2pwd)
     start_time = time.time()
     # Extract & Load MACHINE
-    sql = "select * from unit_retain"
+    sql = sql_str
     conn = db.connect(con,'','')
     pd_conn = dbi.Connection(conn)
     # Extract to Data Frame
@@ -42,7 +42,7 @@ def getandload_machine_data(**kwargs):
     conn_str = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (pguid,pgpwd,pghost,pgport,pgdatabase)
     engine = create_engine(conn_str,client_encoding="utf8")
     # Load to DB-LAKE not transfrom
-    df.to_sql('kp_machine', engine, index=False, if_exists='replace')
+    df.to_sql(tb_name, engine, index=False, if_exists='replace')
     return True
 
 
@@ -54,10 +54,10 @@ with DAG(
 ) as dag:
 
     # 1. Get the Machine data from a table in Kopen DB2
-    task_getandload_Kopen_Machine_data = PythonOperator(
-        task_id='getandload_kopen_machine_data',
+    task_ETL_Kopen_Machine_data = PythonOperator(
+        task_id='etl_kopen_machine_data',
         provide_context=True,
-        python_callable=getandload_machine_data
+        python_callable=getandload_data("select * from unit_retain","kp_machine")
     )
     
-    task_getandload_Kopen_Machine_data
+    task_ETL_Kopen_Machine_data

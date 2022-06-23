@@ -10,6 +10,8 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
+ds = []
+
 def get_machine_data(): 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
@@ -29,10 +31,12 @@ def get_machine_data():
     # Extract to Data Frame
     df = pd.read_sql(sql, pd_conn)
     # Close Connection
-    return df
+    db.close(conn)
+    ds = df
+    return True
 
-def save_machine_data(ti):
-    tb = ti.xcom_pull(task_ids=['process_machine_data'])
+def save_machine_data():
+    tb = ds
 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
@@ -48,8 +52,8 @@ def save_machine_data(ti):
     tb.to_sql('KP_MACHINE', engine, index=False, if_exists='replace')
     return True
 
-def process_machine_data(ti):
-    tb = ti.xcom_pull(task_ids=['get_kopen_machine_data'])
+def process_machine_data():
+    tb = ds
     if not tb:
         raise Exception('No data.')
 

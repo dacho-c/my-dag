@@ -51,27 +51,43 @@ def getandload_data(**kwargs):
 
 
 with DAG(
-    dag_id='Kopen_Master_db2postgres_dag',
-    schedule_interval='0 6-18/2 * * *',
+    dag_id='Kopen_Master_Daily_db2postgres_dag',
+    schedule_interval='0 6 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
 
-    # 1. Get the Machine data from a table in Kopen DB2
-    task_ETL_Kopen_Machine_data = PythonOperator(
-        task_id='etl_kopen_machine_data',
+    # 2. Get the Machine Model data from a table in Kopen DB2
+    task_ETL_Kopen_Machine_Model_data = PythonOperator(
+        task_id='etl_kopen_machine_model_data',
         provide_context=True,
         python_callable=getandload_data,
-        op_kwargs={'sql_str': "select * from unit_retain", 'tb_name': "kp_machine"}
+        op_kwargs={'sql_str': "select * from unit_basic", 'tb_name': "kp_machine_model"}
     )
-
-    # 3. Get the Customer data from a table in Kopen DB2
-    task_ETL_Kopen_Customer_data = PythonOperator(
-        task_id='etl_kopen_customer_data',
+    
+    # 4. Get the Customer data from a table in Kopen DB2
+    task_ETL_Kopen_Branch_data = PythonOperator(
+        task_id='etl_kopen_branch_data',
         provide_context=True,
         python_callable=getandload_data,
-        op_kwargs={'sql_str': "select * from customer", 'tb_name': "kp_customer"}
+        op_kwargs={'sql_str': "select * from branch", 'tb_name': "kp_branch"}
     )
 
-    task_ETL_Kopen_Machine_data >> task_ETL_Kopen_Customer_data
+    # 5. Get the Customer Address data from a table in Kopen DB2
+    task_ETL_Kopen_CustAddress_data = PythonOperator(
+        task_id='etl_kopen_cust_address_data',
+        provide_context=True,
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from customer_address", 'tb_name': "kp_customer_address"}
+    )
+
+    # 6. Get the Part Class data from a table in Kopen DB2
+    task_ETL_Kopen_Part_Class_data = PythonOperator(
+        task_id='etl_kopen_part_class_data',
+        provide_context=True,
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from product_class", 'tb_name': "kp_part_class"}
+    )
+
+    task_ETL_Kopen_Machine_Model_data >> task_ETL_Kopen_Branch_data >> task_ETL_Kopen_CustAddress_data >> task_ETL_Kopen_Part_Class_data

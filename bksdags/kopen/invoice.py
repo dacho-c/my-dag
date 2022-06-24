@@ -51,27 +51,27 @@ def getandload_data(**kwargs):
 
 
 with DAG(
-    dag_id='Kopen_Master_db2postgres_dag',
-    schedule_interval='0 6-18/2 * * *',
+    dag_id='Kopen_Invoice_db2postgres_dag',
+    schedule_interval='5 9-20/1 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
 
-    # 1. Get the Machine data from a table in Kopen DB2
-    task_ETL_Kopen_Machine_data = PythonOperator(
+    # 1. Get the Invoice Head from a table in Kopen DB2
+    task_ETL_Kopen_Inv_Head_data = PythonOperator(
         task_id='etl_kopen_machine_data',
         provide_context=True,
         python_callable=getandload_data,
-        op_kwargs={'sql_str': "select * from unit_retain", 'tb_name': "kp_machine"}
+        op_kwargs={'sql_str': "select * from PART_INV_HEAD", 'tb_name': "kp_invoice_head"}
     )
 
-    # 3. Get the Customer data from a table in Kopen DB2
-    task_ETL_Kopen_Customer_data = PythonOperator(
-        task_id='etl_kopen_customer_data',
+    # 2. Get the Invoice Detail data from a table in Kopen DB2
+    task_ETL_Kopen_Inv_Detail_data = PythonOperator(
+        task_id='etl_kopen_machine_model_data',
         provide_context=True,
         python_callable=getandload_data,
-        op_kwargs={'sql_str': "select * from customer", 'tb_name': "kp_customer"}
+        op_kwargs={'sql_str': "select * from PART_INV_DETAIL", 'tb_name': "kp_invoice_detail"}
     )
 
-    task_ETL_Kopen_Machine_data >> task_ETL_Kopen_Customer_data
+    task_ETL_Kopen_Inv_Head_data >> task_ETL_Kopen_Inv_Detail_data

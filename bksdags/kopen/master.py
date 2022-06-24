@@ -63,7 +63,15 @@ with DAG(
         op_kwargs={'sql_str': "select * from unit_retain", 'tb_name': "kp_machine"}
     )
 
-    # 2. Get the Customer data from a table in Kopen DB2
+    # 2. Get the Machine Model data from a table in Kopen DB2
+    task_ETL_Kopen_Machine_Model_data = PythonOperator(
+        task_id='etl_kopen_machine_model_data',
+        provide_context=True,
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from unit_basic", 'tb_name': "kp_machine_model"}
+    )
+
+    # 3. Get the Customer data from a table in Kopen DB2
     task_ETL_Kopen_Customer_data = PythonOperator(
         task_id='etl_kopen_customer_data',
         provide_context=True,
@@ -71,7 +79,7 @@ with DAG(
         op_kwargs={'sql_str': "select * from customer", 'tb_name': "kp_customer"}
     )
     
-    # 2. Get the Customer data from a table in Kopen DB2
+    # 4. Get the Customer data from a table in Kopen DB2
     task_ETL_Kopen_Branch_data = PythonOperator(
         task_id='etl_kopen_branch_data',
         provide_context=True,
@@ -79,4 +87,21 @@ with DAG(
         op_kwargs={'sql_str': "select * from branch", 'tb_name': "kp_branch"}
     )
 
-    task_ETL_Kopen_Machine_data >> task_ETL_Kopen_Customer_data >> task_ETL_Kopen_Branch_data
+    # 5. Get the Customer Address data from a table in Kopen DB2
+    task_ETL_Kopen_CustAddress_data = PythonOperator(
+        task_id='etl_kopen_cust_address_data',
+        provide_context=True,
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from customer_address", 'tb_name': "kp_customer_address"}
+    )
+
+    # 6. Get the Part Class data from a table in Kopen DB2
+    task_ETL_Kopen_Part_Class_data = PythonOperator(
+        task_id='etl_kopen_part_class_data',
+        provide_context=True,
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from product_class", 'tb_name': "kp_part_class"}
+    )
+
+    task_ETL_Kopen_Machine_data >> task_ETL_Kopen_Machine_Model_data >> task_ETL_Kopen_Customer_data \
+    >> task_ETL_Kopen_Branch_data >> task_ETL_Kopen_CustAddress_data >> task_ETL_Kopen_Part_Class_data

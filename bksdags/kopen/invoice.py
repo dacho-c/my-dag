@@ -42,7 +42,7 @@ def getandload_data(**kwargs):
         pgpwd = config['PG']['pwd']
         # Create SQLAlchemy engine
         conn_str = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (pguid,pgpwd,pghost,pgport,pgdatabase)
-        engine = create_engine(conn_str,client_encoding="utf8")
+        engine = create_engine(conn_str,client_encoding="utf8", max_overflow=-1)
         # Load to DB-LAKE not transfrom
         df.to_sql(kwargs['tb_name'], engine, index=False, if_exists='replace')
         return True
@@ -60,7 +60,7 @@ with DAG(
 
     # 1. Get the Invoice Head from a table in Kopen DB2
     task_ETL_Kopen_Inv_Head_data = PythonOperator(
-        task_id='etl_kopen_machine_data',
+        task_id='etl_kopen_invoice_head_data',
         provide_context=True,
         python_callable=getandload_data,
         op_kwargs={'sql_str': "select * from PART_INV_HEAD", 'tb_name': "kp_invoice_head"}
@@ -68,7 +68,7 @@ with DAG(
 
     # 2. Get the Invoice Detail data from a table in Kopen DB2
     task_ETL_Kopen_Inv_Detail_data = PythonOperator(
-        task_id='etl_kopen_machine_model_data',
+        task_id='etl_kopen_invoice_detail_data',
         provide_context=True,
         python_callable=getandload_data,
         op_kwargs={'sql_str': "select * from PART_INV_DETAIL", 'tb_name': "kp_invoice_detail"}

@@ -3,6 +3,7 @@ import ibm_db as db
 import pandas as pd
 import ibm_db_dbi as dbi
 import configparser
+import pendulum
 from sqlalchemy import create_engine
 from datetime import datetime
 from airflow.models import DAG
@@ -31,7 +32,7 @@ def getandload_data(**kwargs):
     # Close Connection
     db.close(conn)
     
-    df = df.drop('UR_ENAME', axis=1)
+    #df = df.drop('UR_ENAME', axis=1)
 
     pgdatabase = config['PG']['database']
     pghost = config['PG']['host']
@@ -49,7 +50,8 @@ def getandload_data(**kwargs):
 with DAG(
     dag_id='Kopen_Master_db2postgres_dag',
     schedule_interval='0 6-18/2 * * *',
-    start_date=datetime(year=2022, month=6, day=1),
+    #start_date=datetime(year=2022, month=6, day=1),
+    start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
 
@@ -60,5 +62,21 @@ with DAG(
         python_callable=getandload_data,
         op_kwargs={'sql_str': "select * from unit_retain", 'tb_name': "kp_machine"}
     )
+
+    # 2. Get the Customer data from a table in Kopen DB2
+    task_ETL_Kopen_Customer_data = PythonOperator(
+        task_id='etl_kopen_customer_data',
+        provide_context=True,
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from customer", 'tb_name': "kp_customer"}
+    )
     
-    task_ETL_Kopen_Machine_data
+    # 2. Get the Customer data from a table in Kopen DB2
+    task_ETL_Kopen_Branch_data = PythonOperator(
+        task_id='etl_kopen_branch_data',
+        provide_context=True,
+        python_callable=getandload_data,
+        op_kwargs={'sql_str': "select * from branch", 'tb_name': "kp_branch"}
+    )
+
+    task_ETL_Kopen_Machine_data >> task_ETL_Kopen_Customer_data >> task_ETL_Kopen_Branch_data

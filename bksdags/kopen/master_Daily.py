@@ -11,7 +11,7 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-from .Class import read_load_save_data
+from bksdags.kopen.Class import read_load_save_data
 
 def getandload_data(**kwargs): 
     config = configparser.ConfigParser()

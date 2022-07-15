@@ -5,7 +5,7 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-from .Class import read_load_update_data, read_load_update_detail_data, get_last_ym
+from bksdags.kopen.Class import read_load_update_data, read_load_update_detail_data, get_last_ym
 
 with DAG(
     dag_id='Kopen_Invoice_db2postgres_dag',

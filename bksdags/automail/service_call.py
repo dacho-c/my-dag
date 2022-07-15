@@ -3,7 +3,7 @@ import pendulum
 from airflow.models import DAG
 from airflow.providers.http.operators.http import SimpleHttpOperator
 
-from ..kopen.Class import get_yesterday
+from bksdags.kopen.Class import get_yesterday
 with DAG(
     dag_id='Auto_Mail_Daily_Service_call_dag',
     tags=['Auto_Send_Mail'],

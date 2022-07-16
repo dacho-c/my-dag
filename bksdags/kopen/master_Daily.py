@@ -11,7 +11,9 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
-from bksdags.common.Class import read_load_save_data
+import sys, os
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+from ..common.Class import read_load_save_data
 
 def getandload_data(**kwargs): 
     config = configparser.ConfigParser()

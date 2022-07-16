@@ -3,7 +3,9 @@ import pendulum
 from airflow.models import DAG
 from airflow.providers.http.operators.http import SimpleHttpOperator
 
-from bksdags.common.Class import get_yesterday
+import sys, os
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+from ..common.Class import get_yesterday
 with DAG(
     dag_id='Auto_Mail_Daily_Service_call_dag',
     tags=['Auto_Send_Mail'],

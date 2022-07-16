@@ -5,8 +5,8 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname('Class.py')))
-from Class import read_load_save_data
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+from ..common.Class import read_load_save_data
 
 with DAG(
     dag_id='Kopen_Part_Daily_db2postgres_dag',

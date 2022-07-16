@@ -5,7 +5,7 @@ from airflow.operators.python import PythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname('common')))
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 #sys.path.append('/opt/airflow/dags/repo/bksdags/common/Class')
 from Class import read_load_save_data
 

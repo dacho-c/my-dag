@@ -136,7 +136,7 @@ def delete_before_append_detail(**kwargs):
 
     pgtb = kwargs['To_Table']
 
-    sqlstr = sql_detail_delete(pgtb)
+    sqlstr = sql_detail_delete(pgtb, get_last_ym)
     engine_pg.execute(sqlstr)
     return True
 
@@ -196,7 +196,7 @@ def read_load_update_detail_data(**kwargs):
     start_time = time.time()
     n = 0
     rows = 0
-    sqlstr = sql_detail_select(tb_from)
+    sqlstr = sql_detail_select(tb_from, get_last_ym)
 
     for chunk_df in pd.read_sql(sqlstr, conn_db2, chunksize=c_size):
         rows += len(chunk_df)

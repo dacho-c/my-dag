@@ -1,4 +1,4 @@
-from bksdags.kopen.Class import get_last_ym
+from bksdags.common.Class import get_last_ym
 
 def sql_detail_select(tb):
     if tb == 'part_inv_detail':

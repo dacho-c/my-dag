@@ -7,7 +7,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
-from ..common.Class import read_load_update_data, read_load_update_detail_data, get_last_ym
+from Class import read_load_update_data, read_load_update_detail_data, get_last_ym
 
 with DAG(
     dag_id='Kopen_Invoice_db2postgres_dag',

@@ -13,7 +13,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
-from ..common.Class import read_load_save_data
+from Class import read_load_save_data
 
 def getandload_data(**kwargs): 
     config = configparser.ConfigParser()

@@ -21,7 +21,7 @@ with DAG(
     task_EL_Kopen_Part_data = PythonOperator(
         task_id='el_kopen_part_data',
         provide_context=True,
-        python_callable=common.read_load_save_data,
+        python_callable=common.Class.read_load_save_data,
         op_kwargs={'From_Table': "product", 'To_Table': "kp_part", 'Chunk_Size': 50000}
     )
 

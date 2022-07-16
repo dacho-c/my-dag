@@ -5,6 +5,8 @@ from sqlalchemy import create_engine, delete
 import datetime
 from airflow.models import Variable
 
+import sys, os
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from sql import sql_detail_select, sql_detail_delete
 
 def get_last_ym():

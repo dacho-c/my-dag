@@ -1,5 +1,4 @@
-import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+
 from Class import get_last_ym
 
 def sql_detail_select(tb):

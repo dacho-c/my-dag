@@ -1,5 +1,10 @@
+import datetime
 
-from Class import get_last_ym
+def get_last_ym():
+    today = datetime.date.today()
+    first = today.replace(day=1)
+    lastMonth = first - datetime.timedelta(days=1)
+    return lastMonth.strftime("%Y%m")
 
 def sql_detail_select(tb):
     if tb == 'part_inv_detail':

@@ -20,7 +20,7 @@ with DAG(
     task_is_api_active = HttpSensor(
         task_id='is_api_active',
         http_conn_id='bks_api',
-        endpoint='genreport/sendmail_servicecall/'
+        endpoint='genreport/'
     )
 
     # 2. Auto send mail
@@ -29,7 +29,7 @@ with DAG(
         http_conn_id='bks_api',
         method='GET',
         endpoint='genreport/sendmail_servicecall/',
-        data={"mailto": "dacho-c@bangkokkomatsusales.com", "mailcc": "", "lastdate": get_yesterday},
+        data={"lastdate": get_yesterday},
         headers={"accept": "application/json"},
     )
 

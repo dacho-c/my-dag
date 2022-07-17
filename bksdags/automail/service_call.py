@@ -1,6 +1,7 @@
 from datetime import datetime
 import pendulum
 from airflow.models import DAG
+from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.http.operators.http import SimpleHttpOperator
 
 import sys, os
@@ -15,13 +16,21 @@ with DAG(
     catchup=False
 ) as dag:
 
-    # 1. Auto send mail
+    # 1. Check if the API is up
+    task_is_api_active = HttpSensor(
+        task_id='is_api_active',
+        http_conn_id='bks_api',
+        endpoint='genreport/sendmail_servicecall/'
+    )
+
+    # 2. Auto send mail
     task_Auto_Mail_To_Call_Center = SimpleHttpOperator(
         task_id='auto_mail_service_call',
+        http_conn_id='bks_api',
         method='GET',
-        endpoint='https://api.komatsuthailand.com/genreport/sendmail_servicecall',
+        endpoint='genreport/sendmail_servicecall/',
         data={"mailto": "dacho-c@bangkokkomatsusales.com", "mailcc": "", "lastdate": get_yesterday},
         headers={"accept": "application/json"},
     )
 
-    task_Auto_Mail_To_Call_Center
+    task_is_api_active >> task_Auto_Mail_To_Call_Center

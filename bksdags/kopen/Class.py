@@ -35,20 +35,20 @@ class common(object):
         db2strcon = "db2://%s:%s@%s:%s/%s" % (db2uid, db2pwd, db2host, db2port, db2database)
         return db2strcon
 
-    def read_load_save_data(self, From_Table, To_Table, Chunk_Size): 
+    def read_load_save_data(**kwargs): 
 
-        db2strcon = common.get_db2_connection(self)
+        db2strcon = common.get_db2_connection('')
 
-        pgstrcon = common.get_pg_connection(self)
+        pgstrcon = common.get_pg_connection('')
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
         engine_db2 = create_engine(db2strcon)
         conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
-        tb_from = From_Table
-        tb_to = To_Table
-        c_size = Chunk_Size
+        tb_from = kwargs['From_Table']
+        tb_to = kwargs['To_Table']
+        c_size = kwargs['Chunk_Size']
 
         start_time = time.time()
         n = 0

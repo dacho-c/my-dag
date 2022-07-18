@@ -53,7 +53,7 @@ def getandload_data(**kwargs):
     else: 
         return False
 """
-self = []
+
 with DAG(
     dag_id='Kopen_Master_Daily_db2postgres_dag',
     schedule_interval='5 6 * * *',
@@ -66,32 +66,32 @@ with DAG(
     task_EL_Kopen_Machine_Model_data = PythonOperator(
         task_id='el_kopen_machine_model_data',
         provide_context=True,
-        python_callable=common.read_load_save_data(self,"unit_basic", "kp_machine_model", 50000),
-        #op_kwargs={'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}
     )
     
     # 2. Get the Customer data from a table in Kopen DB2
     task_EL_Kopen_Branch_data = PythonOperator(
         task_id='el_kopen_branch_data',
         provide_context=True,
-        python_callable=common.read_load_save_data(self,"branch", "kp_branch", 50000),
-        #op_kwargs={'From_Table': "branch", 'To_Table': "kp_branch", 'Chunk_Size': 50000}
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "branch", 'To_Table': "kp_branch", 'Chunk_Size': 50000}
     )
 
     # 3. Get the Customer Address data from a table in Kopen DB2
     task_EL_Kopen_CustAddress_data = PythonOperator(
         task_id='el_kopen_cust_address_data',
         provide_context=True,
-        python_callable=common.read_load_save_data(self,"customer_address", "kp_customer_address", 50000),
-        #op_kwargs={'From_Table': "customer_address", 'To_Table': "kp_customer_address", 'Chunk_Size': 50000}
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "customer_address", 'To_Table': "kp_customer_address", 'Chunk_Size': 50000}
     )
 
     # 4. Get the Part Class data from a table in Kopen DB2
     task_EL_Kopen_Part_Class_data = PythonOperator(
         task_id='el_kopen_part_class_data',
         provide_context=True,
-        python_callable=common.read_load_save_data(self,"product_class", "kp_part_class", 50000),
-        #op_kwargs={'From_Table': "product_class", 'To_Table': "kp_part_class", 'Chunk_Size': 50000}
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "product_class", 'To_Table': "kp_part_class", 'Chunk_Size': 50000}
     )
 
     task_EL_Kopen_Machine_Model_data >> task_EL_Kopen_Branch_data >> task_EL_Kopen_CustAddress_data >> task_EL_Kopen_Part_Class_data

@@ -70,48 +70,48 @@ class common(object):
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
 
-    def delete_before_append(self, To_Table, Condition):
+    def delete_before_append(**kwargs):
 
-        pgstrcon = common.get_pg_connection(self)
+        pgstrcon = common.get_pg_connection('')
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
 
-        pgtb = To_Table
-        pgcondition = Condition
+        pgtb = kwargs['To_Table']
+        pgcondition = kwargs['Condition']
 
         sqlstr = "DELETE FROM %s WHERE %s" % (pgtb, pgcondition)
         engine_pg.execute(sqlstr)
         return True
 
-    def delete_before_append_detail(self, To_Table):
+    def delete_before_append_detail(**kwargs):
 
-        pgstrcon = common.get_pg_connection(self)
+        pgstrcon = common.get_pg_connection('')
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
 
-        pgtb = To_Table
+        pgtb = kwargs['To_Table']
 
         sqlstr = sql_detail_delete(pgtb, get_last_ym)
         engine_pg.execute(sqlstr)
         return True
 
-    def read_load_update_data(self, From_Table, To_Table, Chunk_Size, Condition): 
+    def read_load_update_data(**kwargs): 
 
-        db2strcon = common.get_db2_connection(self)
+        db2strcon = common.get_db2_connection('')
 
-        pgstrcon = common.get_pg_connection(self)
+        pgstrcon = common.get_pg_connection('')
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
         engine_db2 = create_engine(db2strcon)
         conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
-        tb_from = From_Table
-        condition = Condition
-        tb_to = To_Table
-        c_size = Chunk_Size
+        tb_from = kwargs['From_Table']
+        condition = kwargs['Condition']
+        tb_to = kwargs['To_Table']
+        c_size = kwargs['Chunk_Size']
 
         start_time = time.time()
         n = 0
@@ -123,7 +123,7 @@ class common(object):
             print(f"Got dataframe {rows}/All rows")
             # Load to DB-LAKE not transfrom
             if n == 0:
-                common.delete_before_append(self, tb_to, condition)
+                common.delete_before_append(**kwargs)
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
                 n = n + 1
@@ -135,20 +135,20 @@ class common(object):
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
 
-    def read_load_update_detail_data(self, From_Table, To_Table, Chunk_Size): 
+    def read_load_update_detail_data(**kwargs): 
 
-        db2strcon = common.get_db2_connection(self)
+        db2strcon = common.get_db2_connection('')
 
-        pgstrcon = common.get_pg_connection(self)
+        pgstrcon = common.get_pg_connection('')
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
         engine_db2 = create_engine(db2strcon)
         conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
-        tb_from = From_Table
-        tb_to = To_Table
-        c_size = Chunk_Size
+        tb_from = kwargs['From_Table']
+        tb_to = kwargs['To_Table']
+        c_size = kwargs['Chunk_Size']
 
         start_time = time.time()
         n = 0
@@ -160,7 +160,7 @@ class common(object):
             print(f"Got dataframe {rows}/All rows")
             # Load to DB-LAKE not transfrom
             if n == 0:
-                common.delete_before_append_detail(self,tb_to)
+                common.delete_before_append_detail(**kwargs)
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
                 n = n + 1

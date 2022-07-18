@@ -6,7 +6,7 @@ from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
-from Class import read_load_save_data
+from Class import common
 
 with DAG(
     dag_id='Kopen_Part_Daily_db2postgres_dag',
@@ -20,7 +20,7 @@ with DAG(
     task_EL_Kopen_Part_data = PythonOperator(
         task_id='el_kopen_part_data',
         provide_context=True,
-        python_callable=read_load_save_data("product", "kp_part", 50000),
+        python_callable=common.read_load_save_data('',"product", "kp_part", 50000),
         #op_kwargs={'From_Table': "product", 'To_Table': "kp_part", 'Chunk_Size': 50000}
     )
 

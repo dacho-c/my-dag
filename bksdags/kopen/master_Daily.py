@@ -14,7 +14,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import read_load_save_data
-
+"""
 def getandload_data(**kwargs): 
     config = configparser.ConfigParser()
     config.read(Variable.get('db2pg_config'))
@@ -52,7 +52,7 @@ def getandload_data(**kwargs):
         return True
     else: 
         return False
-
+"""
 with DAG(
     dag_id='Kopen_Master_Daily_db2postgres_dag',
     schedule_interval='5 6 * * *',
@@ -65,32 +65,32 @@ with DAG(
     task_EL_Kopen_Machine_Model_data = PythonOperator(
         task_id='el_kopen_machine_model_data',
         provide_context=True,
-        python_callable=read_load_save_data({'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}),
+        python_callable=read_load_save_data("unit_basic", "kp_machine_model", 50000),
         #op_kwargs={'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}
     )
     
-    # 4. Get the Customer data from a table in Kopen DB2
+    # 2. Get the Customer data from a table in Kopen DB2
     task_EL_Kopen_Branch_data = PythonOperator(
         task_id='el_kopen_branch_data',
         provide_context=True,
-        python_callable=read_load_save_data,
-        op_kwargs={'From_Table': "branch", 'To_Table': "kp_branch", 'Chunk_Size': 50000}
+        python_callable=read_load_save_data("branch", "kp_branch", 50000),
+        #op_kwargs={'From_Table': "branch", 'To_Table': "kp_branch", 'Chunk_Size': 50000}
     )
 
-    # 5. Get the Customer Address data from a table in Kopen DB2
+    # 3. Get the Customer Address data from a table in Kopen DB2
     task_EL_Kopen_CustAddress_data = PythonOperator(
         task_id='el_kopen_cust_address_data',
         provide_context=True,
-        python_callable=getandload_data,
-        op_kwargs={'From_Table': "customer_address", 'To_Table': "kp_customer_address", 'Chunk_Size': 50000}
+        python_callable=read_load_save_data("customer_address", "kp_customer_address", 50000),
+        #op_kwargs={'From_Table': "customer_address", 'To_Table': "kp_customer_address", 'Chunk_Size': 50000}
     )
 
-    # 6. Get the Part Class data from a table in Kopen DB2
+    # 4. Get the Part Class data from a table in Kopen DB2
     task_EL_Kopen_Part_Class_data = PythonOperator(
         task_id='el_kopen_part_class_data',
         provide_context=True,
-        python_callable=read_load_save_data,
-        op_kwargs={'From_Table': "product_class", 'To_Table': "kp_part_class", 'Chunk_Size': 50000}
+        python_callable=read_load_save_data("product_class", "kp_part_class", 50000),
+        #op_kwargs={'From_Table': "product_class", 'To_Table': "kp_part_class", 'Chunk_Size': 50000}
     )
 
     task_EL_Kopen_Machine_Model_data >> task_EL_Kopen_Branch_data >> task_EL_Kopen_CustAddress_data >> task_EL_Kopen_Part_Class_data

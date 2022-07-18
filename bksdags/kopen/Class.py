@@ -78,7 +78,7 @@ def get_db2_connection():
     db2strcon = "db2://%s:%s@%s:%s/%s" % (db2uid, db2pwd, db2host, db2port, db2database)
     return db2strcon
 
-def read_load_save_data(**kwargs): 
+def read_load_save_data(From_Table, To_Table, Chunk_Size): 
 
     db2strcon = get_db2_connection
 
@@ -89,9 +89,9 @@ def read_load_save_data(**kwargs):
     engine_db2 = create_engine(db2strcon)
     conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
-    tb_from = kwargs['From_Table']
-    tb_to = kwargs['To_Table']
-    c_size = kwargs['Chunk_Size']
+    tb_from = From_Table
+    tb_to = To_Table
+    c_size = Chunk_Size
 
     start_time = time.time()
     n = 0
@@ -113,34 +113,34 @@ def read_load_save_data(**kwargs):
     print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
     return True
 
-def delete_before_append(**kwargs):
+def delete_before_append(To_Table, Condition):
 
     pgstrcon = get_pg_connection
 
     # Create SQLAlchemy engine
     engine_pg = create_engine(pgstrcon,client_encoding="utf8")
 
-    pgtb = kwargs['To_Table']
-    pgcondition = kwargs['Condition']
+    pgtb = To_Table
+    pgcondition = Condition
 
     sqlstr = "DELETE FROM %s WHERE %s" % (pgtb, pgcondition)
     engine_pg.execute(sqlstr)
     return True
 
-def delete_before_append_detail(**kwargs):
+def delete_before_append_detail(To_Table):
 
     pgstrcon = get_pg_connection
 
     # Create SQLAlchemy engine
     engine_pg = create_engine(pgstrcon,client_encoding="utf8")
 
-    pgtb = kwargs['To_Table']
+    pgtb = To_Table
 
     sqlstr = sql_detail_delete(pgtb, get_last_ym)
     engine_pg.execute(sqlstr)
     return True
 
-def read_load_update_data(**kwargs): 
+def read_load_update_data(From_Table, To_Table, Chunk_Size, Condition): 
 
     db2strcon = get_db2_connection
 
@@ -151,10 +151,10 @@ def read_load_update_data(**kwargs):
     engine_db2 = create_engine(db2strcon)
     conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
-    tb_from = kwargs['From_Table']
-    condition = kwargs['Condition']
-    tb_to = kwargs['To_Table']
-    c_size = kwargs['Chunk_Size']
+    tb_from = From_Table
+    condition = Condition
+    tb_to = To_Table
+    c_size = Chunk_Size
 
     start_time = time.time()
     n = 0
@@ -178,7 +178,7 @@ def read_load_update_data(**kwargs):
     print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
     return True
 
-def read_load_update_detail_data(**kwargs): 
+def read_load_update_detail_data(From_Table, To_Table, Chunk_Size): 
 
     db2strcon = get_db2_connection
 
@@ -189,9 +189,9 @@ def read_load_update_detail_data(**kwargs):
     engine_db2 = create_engine(db2strcon)
     conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
-    tb_from = kwargs['From_Table']
-    tb_to = kwargs['To_Table']
-    c_size = kwargs['Chunk_Size']
+    tb_from = From_Table
+    tb_to = To_Table
+    c_size = Chunk_Size
 
     start_time = time.time()
     n = 0
@@ -203,7 +203,7 @@ def read_load_update_detail_data(**kwargs):
         print(f"Got dataframe {rows}/All rows")
         # Load to DB-LAKE not transfrom
         if n == 0:
-            delete_before_append_detail(**kwargs)
+            delete_before_append_detail(tb_to)
             chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
             print(f"Already Update to data lake {rows} rows")
             n = n + 1

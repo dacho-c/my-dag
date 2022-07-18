@@ -22,16 +22,16 @@ with DAG(
     task_EL_Kopen_Machine_data = PythonOperator(
         task_id='el_kopen_machine_data',
         provide_context=True,
-        python_callable=read_load_save_data,
-        op_kwargs={'From_Table': "unit_retain", 'To_Table': "kp_machine", 'Chunk_Size': 50000}
+        python_callable=read_load_save_data("unit_retain", "kp_machine", 50000),
+        #op_kwargs={'From_Table': "unit_retain", 'To_Table': "kp_machine", 'Chunk_Size': 50000}
     )
 
     # 3. Get the Customer data from a table in Kopen DB2
     task_EL_Kopen_Customer_data = PythonOperator(
         task_id='el_kopen_customer_data',
         provide_context=True,
-        python_callable=read_load_save_data,
-        op_kwargs={'From_Table': "customer", 'To_Table': "kp_customer", 'Chunk_Size': 50000}
+        python_callable=read_load_save_data("customer", "kp_customer", 50000),
+        #op_kwargs={'From_Table': "customer", 'To_Table': "kp_customer", 'Chunk_Size': 50000}
     )
 
     task_EL_Kopen_Machine_data >> task_EL_Kopen_Customer_data

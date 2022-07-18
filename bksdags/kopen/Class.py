@@ -93,7 +93,7 @@ class common(object):
 
         pgtb = kwargs['To_Table']
 
-        sqlstr = sql_detail_delete(pgtb, get_last_ym)
+        sqlstr = sql_detail_delete(pgtb, get_last_ym())
         print(sqlstr)
         engine_pg.execute(sqlstr)
         return True
@@ -154,9 +154,9 @@ class common(object):
         start_time = time.time()
         n = 0
         rows = 0
-        sqlstr = sql_detail_select(tb_from, get_last_ym)
+        sqlstr = sql_detail_select(tb_from, get_last_ym())
         print(sqlstr)
-        
+
         for chunk_df in pd.read_sql(sqlstr, conn_db2, chunksize=c_size):
             rows += len(chunk_df)
             print(f"Got dataframe {rows}/All rows")

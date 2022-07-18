@@ -23,7 +23,7 @@ with DAG(
         task_id='etl_kopen_invoice_head_data',
         provide_context=True,
         python_callable=common.read_load_update_data,
-        op_kwargs={'From_Table': "part_inv_head", 'To_Table': "kp_invoice_head", 'Chunk_Size': 50000, 'Condition': "pih_account_month >= '%s'" % (get_last_ym)}
+        op_kwargs={'From_Table': "part_inv_head", 'To_Table': "kp_invoice_head", 'Chunk_Size': 50000, 'Condition': "pih_account_month >= '%s'" % (get_last_ym())}
     )
 
     # 2. Get the Invoice Detail data from a table in Kopen DB2

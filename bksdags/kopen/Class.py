@@ -66,7 +66,6 @@ class common(object):
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Save to data lake {rows} rows")
         print("EL Process finished")
-        end_time = time.time()
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
 
@@ -81,6 +80,7 @@ class common(object):
         pgcondition = kwargs['Condition']
 
         sqlstr = "DELETE FROM %s WHERE %s" % (pgtb, pgcondition)
+        print(sqlstr)
         engine_pg.execute(sqlstr)
         return True
 
@@ -94,6 +94,7 @@ class common(object):
         pgtb = kwargs['To_Table']
 
         sqlstr = sql_detail_delete(pgtb, get_last_ym)
+        print(sqlstr)
         engine_pg.execute(sqlstr)
         return True
 
@@ -117,6 +118,7 @@ class common(object):
         n = 0
         rows = 0
         sqlstr = "SELECT * FROM db2admin.%s WHERE %s" % (tb_from, condition)
+        print(sqlstr)
 
         for chunk_df in pd.read_sql(sqlstr, conn_db2, chunksize=c_size):
             rows += len(chunk_df)
@@ -131,7 +133,6 @@ class common(object):
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
         print("EL Process finished")
-        end_time = time.time()
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
 
@@ -154,7 +155,8 @@ class common(object):
         n = 0
         rows = 0
         sqlstr = sql_detail_select(tb_from, get_last_ym)
-
+        print(sqlstr)
+        
         for chunk_df in pd.read_sql(sqlstr, conn_db2, chunksize=c_size):
             rows += len(chunk_df)
             print(f"Got dataframe {rows}/All rows")
@@ -168,6 +170,5 @@ class common(object):
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
         print("EL Process finished")
-        end_time = time.time()
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True

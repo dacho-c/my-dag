@@ -37,9 +37,9 @@ class common(object):
 
     def read_load_save_data(self, From_Table, To_Table, Chunk_Size): 
 
-        db2strcon = common.get_db2_connection()
+        db2strcon = common.get_db2_connection(self)
 
-        pgstrcon = common.get_pg_connection()
+        pgstrcon = common.get_pg_connection(self)
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
@@ -72,7 +72,7 @@ class common(object):
 
     def delete_before_append(self, To_Table, Condition):
 
-        pgstrcon = common.get_pg_connection()
+        pgstrcon = common.get_pg_connection(self)
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
@@ -86,7 +86,7 @@ class common(object):
 
     def delete_before_append_detail(self, To_Table):
 
-        pgstrcon = common.get_pg_connection()
+        pgstrcon = common.get_pg_connection(self)
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
@@ -99,9 +99,9 @@ class common(object):
 
     def read_load_update_data(self, From_Table, To_Table, Chunk_Size, Condition): 
 
-        db2strcon = common.get_db2_connection()
+        db2strcon = common.get_db2_connection(self)
 
-        pgstrcon = common.get_pg_connection()
+        pgstrcon = common.get_pg_connection(self)
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
@@ -137,9 +137,9 @@ class common(object):
 
     def read_load_update_detail_data(self, From_Table, To_Table, Chunk_Size): 
 
-        db2strcon = common.get_db2_connection()
+        db2strcon = common.get_db2_connection(self)
 
-        pgstrcon = common.get_pg_connection()
+        pgstrcon = common.get_pg_connection(self)
 
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")

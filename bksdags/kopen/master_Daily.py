@@ -61,12 +61,12 @@ with DAG(
     catchup=False
 ) as dag:
 
-    # 2. Get the Machine Model data from a table in Kopen DB2
+    # 1. Get the Machine Model data from a table in Kopen DB2
     task_EL_Kopen_Machine_Model_data = PythonOperator(
         task_id='el_kopen_machine_model_data',
         provide_context=True,
-        python_callable=read_load_save_data,
-        op_kwargs={'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}
+        python_callable=read_load_save_data({'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}),
+        #op_kwargs={'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}
     )
     
     # 4. Get the Customer data from a table in Kopen DB2

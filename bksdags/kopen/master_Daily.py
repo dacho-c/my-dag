@@ -94,4 +94,37 @@ with DAG(
         op_kwargs={'From_Table': "product_class", 'To_Table': "kp_part_class", 'Chunk_Size': 50000}
     )
 
-    task_EL_Kopen_Machine_Model_data >> task_EL_Kopen_Branch_data >> task_EL_Kopen_CustAddress_data >> task_EL_Kopen_Part_Class_data
+    # 5. Get the Department data from a table in Kopen DB2
+    task_EL_Kopen_Department_data = PythonOperator(
+        task_id='el_kopen_department_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "department", 'To_Table': "kp_department", 'Chunk_Size': 50000}
+    )
+
+    # 6. Get the Employee data from a table in Kopen DB2
+    task_EL_Kopen_Employee_data = PythonOperator(
+        task_id='el_kopen_employee_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "employee", 'To_Table': "kp_employee", 'Chunk_Size': 50000}
+    )
+
+    # 7. Get the ID data from a table in Kopen DB2
+    task_EL_Kopen_IDbooks_data = PythonOperator(
+        task_id='el_kopen_idbooks_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "idbooks", 'To_Table': "kp_idbooks", 'Chunk_Size': 50000}
+    )
+
+    # 8. Get the service code data from a table in Kopen DB2
+    task_EL_Kopen_Service_code_data = PythonOperator(
+        task_id='el_kopen_service_code_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "SERV_BUSINESS_CODE", 'To_Table': "kp_service_code", 'Chunk_Size': 50000}
+    )
+
+    task_EL_Kopen_Machine_Model_data >> task_EL_Kopen_Branch_data >> task_EL_Kopen_CustAddress_data >> task_EL_Kopen_Part_Class_data \
+    >> task_EL_Kopen_Department_data >> task_EL_Kopen_Employee_data >> task_EL_Kopen_IDbooks_data >> task_EL_Kopen_Service_code_data 

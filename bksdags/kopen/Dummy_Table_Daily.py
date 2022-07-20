@@ -32,5 +32,37 @@ with DAG(
         op_kwargs={'From_Table': "BKS_REVENUE_TYPE", 'To_Table': "kp_revenue_type", 'Chunk_Size': 50000}
     )
 
+    # 2. Get the part_monitor data from a table in Kopen DB2
+    task_EL_Kopen_Part_Monitor_data = PythonOperator(
+        task_id='el_kopen_part_monitor_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "BKS_PART_MONITOR", 'To_Table': "kp_bks_part_monitor", 'Chunk_Size': 50000}
+    )
 
-    task_EL_Kopen_Revenue_Type_data
+    # 3. Get the sok part data from a table in Kopen DB2
+    task_EL_Kopen_SOK_Part_data = PythonOperator(
+        task_id='el_kopen_sok_part_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "BKS_SOK_PART", 'To_Table': "kp_bks_sok_part", 'Chunk_Size': 50000}
+    )
+
+    # 4. Get the all main filter data from a table in Kopen DB2
+    task_EL_Kopen_All_Main_Filter_data = PythonOperator(
+        task_id='el_kopen_all_main_filter_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "bks_all_main_filter", 'To_Table': "kp_bks_all_main_filter", 'Chunk_Size': 50000}
+    )
+
+    # 4. Get the part demand data from a table in Kopen DB2
+    task_EL_Kopen_Part_Demand_data = PythonOperator(
+        task_id='el_kopen_part_demand_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "bks_part_demand", 'To_Table': "kp_bks_part_demand", 'Chunk_Size': 50000}
+    )
+
+    task_EL_Kopen_Revenue_Type_data >> task_EL_Kopen_Part_Monitor_data >> task_EL_Kopen_SOK_Part_data \
+    >> task_EL_Kopen_All_Main_Filter_data >> task_EL_Kopen_Part_Demand_data

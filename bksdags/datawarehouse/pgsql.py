@@ -4,8 +4,8 @@ def sql_ET_dblake(tb, lym):
             FROM db2admin.PART_INV_DETAIL 
             LEFT JOIN db2admin.PART_INV_HEAD ON db2admin.PART_INV_DETAIL.PID_TICKET_ID = db2admin.PART_INV_HEAD.PIH_TICKET_ID 
             WHERE db2admin.PART_INV_HEAD.PIH_ACCOUNT_MONTH >= '%s'""" % (lym)
-    elif tb == 'machine':
-        return """'%s'""" % (lym)
+    elif tb == 'machine_delivery':
+        return """select * from v_machine_delivery"""
     else: 
         return ""
 

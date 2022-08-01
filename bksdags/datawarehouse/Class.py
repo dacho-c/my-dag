@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, delete
 #import datetime
 from airflow.models import Variable
 
-from pgsql import sql_detail_select, sql_detail_delete
+from pgsql import sql_ET_dblake, sql_L_warehouse
 from function import get_last_ym
 
 class common(object):
@@ -52,12 +52,12 @@ class common(object):
         start_time = time.time()
         n = 0
         rows = 0
-        sqlstr = "SELECT * FROM " + tb_from #########
+        sqlstr = sql_ET_dblake(tb_from, get_last_ym())
 
         for chunk_df in pd.read_sql(sqlstr, conn_dl, chunksize=c_size):
             rows += len(chunk_df)
             print(f"Extract dataframe {rows}/All rows")
-            # Load to DB-LAKE not transfrom
+            # Load to DB-LAKE transfrom
             if n == 0:
                 chunk_df.to_sql(tb_to, engine_wh, index=False, if_exists='replace')
                 n = n + 1

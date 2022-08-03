@@ -12,9 +12,9 @@ class common(object):
     def get_dl_connection(self):
         config = configparser.ConfigParser()
         config.read(Variable.get('db2pg_config'))
-        pgdatabase = config['PG']['database']
-        pghost = config['PG']['host']
-        pgport = config['PG']['port']
+        pgdatabase = Variable.get('dl_database')
+        pghost = Variable.get('wh_host')
+        pgport = Variable.get('wh_port')
         pguid = config['PG']['uid']
         pgpwd = config['PG']['pwd']
         # Connection String to Postgres DATA Lake

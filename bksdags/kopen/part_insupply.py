@@ -23,7 +23,7 @@ with DAG(
         task_id='etl_kopen_part_supply_head_data',
         provide_context=True,
         python_callable=common.read_load_update_data,
-        op_kwargs={'From_Table': "SERV_PART_OUTSTOCK", 'To_Table': "kp_service_part_supply_head", 'Chunk_Size': 50000, 'Condition': "pqh_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'From_Table': "SERV_PART_OUTSTOCK", 'To_Table': "kp_service_part_supply_head", 'Chunk_Size': 50000, 'Condition': "spo_account_month >= '%s'" % (get_last_ym())}
     )
 
     # 2. Get the part supply Detail data from a table in Kopen DB2

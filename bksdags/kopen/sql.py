@@ -14,6 +14,11 @@ def sql_detail_select(tb, lym):
             FROM db2admin.PART_QUOTE_DETAIL 
             LEFT JOIN db2admin.PART_QUOTE_HEAD ON db2admin.PART_QUOTE_DETAIL.PQD_TICKET_ID = db2admin.PART_QUOTE_HEAD.PQH_TICKET_ID 
             WHERE db2admin.PART_QUOTE_HEAD.PQH_ACCOUNT_MONTH >= '%s'""" % (lym)
+    elif tb == 'SERV_PART_OUT_DTL':
+        return """SELECT db2admin.SERV_PART_OUT_DTL.* 
+            FROM db2admin.SERV_PART_OUT_DTL 
+            LEFT JOIN db2admin.SERV_PART_OUTSTOCK ON db2admin.SERV_PART_OUT_DTL.SPOD_TICKET_ID = db2admin.SERV_PART_OUTSTOCK.SPO_TICKET_ID 
+            WHERE db2admin.SERV_PART_OUTSTOCK.SPO_ACCOUNT_MONTH >= '%s'""" % (lym)
     else: 
         return ""
 
@@ -27,5 +32,8 @@ def sql_detail_delete(tb, lym):
     elif tb == 'kp_part_quote_detail':
         return """DELETE FROM kp_part_quote_detail 
             WHERE kp_part_quote_detail.PQD_TICKET_ID IN (SELECT PQH_TICKET_ID FROM kp_part_quote_head WHERE PQH_ACCOUNT_MONTH >= '%s');""" % (lym)
+    elif tb == 'kp_service_part_supply_detail':
+        return """DELETE FROM kp_service_part_supply_detail 
+            WHERE kp_service_part_supply_detail.SPOD_TICKET_ID IN (SELECT SPO_TICKET_ID FROM kp_service_part_supply_head WHERE SPO_ACCOUNT_MONTH >= '%s');""" % (lym)
     else:
         return ""

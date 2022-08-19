@@ -15,7 +15,8 @@ def ETL_process(**kwargs):
     import pandas as pd
     import sqlalchemy
 
-    whstrcon = common.get_wh_connection('')
+    #whstrcon = common.get_wh_connection('')
+    whstrcon = "postgresql+psycopg2://dataetl:bks1234@147.50.133.49:30202/bks_dtwh"
     dlstrcon = common.get_dl_connection('')
     # Create SQLAlchemy engine
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
@@ -46,7 +47,7 @@ def ETL_process(**kwargs):
 
 with DAG(
     dag_id='DWH_ETL_SalesByItem_dag',
-    schedule_interval='25 7-20/1 * * *',
+    schedule_interval='25 7-20/3 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

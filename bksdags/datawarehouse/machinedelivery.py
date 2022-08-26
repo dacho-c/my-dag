@@ -112,6 +112,7 @@ def UPSERT_process(**kwargs):
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
 
+    n = 0
     rows = 0
     tb_to = kwargs['To_Table']
     strexec = ""
@@ -126,8 +127,9 @@ def UPSERT_process(**kwargs):
         print(f"Got dataframe to Upsert {rows} rows")
         # Load & transfrom
         df = df.reset_index()
-        for index, row in df.iterrows():
-            print(f"Process {index}/{rows} rows")
+        for row in df.iterrows():
+            n += 1
+            print(f"Process {n}/{rows} rows")
             rs = upsert(engine,'public',tb_to,row)
             print(rs)
     else:

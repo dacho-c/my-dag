@@ -120,7 +120,7 @@ def UPSERT_process(**kwargs):
     ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
     if result.loc[0,'exists']:
-        tmptable = "SELECT * FROM %s);" % (tb_to + '_tmp')
+        tmptable = "SELECT * FROM %s;" % (tb_to + '_tmp')
         df = pd.read_sql_query(sql=sqlalchemy.text(tmptable), con=engine)
         rows += len(df)
         print(f"Got dataframe to Upsert {rows} rows")

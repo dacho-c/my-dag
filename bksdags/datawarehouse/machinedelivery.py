@@ -19,7 +19,7 @@ def ETL_process(**kwargs):
     # Create SQLAlchemy engine
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
     engine_wh = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
-    conn_dl = engine_dl.connect().execution_options(stream_results=True)
+    #conn_dl = engine_dl.connect().execution_options(stream_results=True)
 
     sqlstr_main = sql_ET_machine_cust()
     sqlstr_mc = sql_ET_machine()
@@ -30,7 +30,7 @@ def ETL_process(**kwargs):
 
     n = 0
     rows = 0
-    tb_to = kwargs['To_Table']
+    tb_to = kwargs['To_Table'] + "_tmp"
     c_size = kwargs['Chunk_Size']
 
     for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_dl, chunksize=c_size):
@@ -60,6 +60,85 @@ def ETL_process(**kwargs):
         print(f"Save to data W/H {rows} rows")
     print("ETL Process finished")
 
+def upsert(engine, schema, table_name, records=[]):
+
+    from sqlalchemy import MetaData, Table
+    from sqlalchemy.dialects import postgresql
+    from sqlalchemy.inspection import inspect
+
+
+    metadata = MetaData(schema=schema)
+    metadata.bind = engine
+
+    table = Table(table_name, metadata, schema=schema, autoload=True)
+
+    # get list of fields making up primary key
+    primary_keys = [key.name for key in inspect(table).primary_key]
+
+    # assemble base statement
+    stmt = postgresql.insert(table).values(records)
+
+    # define dict of non-primary keys for updating
+    update_dict = {
+        c.name: c
+        for c in stmt.excluded
+        if not c.primary_key
+    }
+
+    # cover case when all columns in table comprise a primary key
+    # in which case, upsert is identical to 'on conflict do nothing.
+    if update_dict == {}:
+        warnings.warn('no updateable columns found for table')
+        # we still wanna insert without errors
+        insert_ignore(table_name, records)
+        return None
+
+    # assemble new statement with 'on conflict do update' clause
+    update_stmt = stmt.on_conflict_do_update(
+        index_elements=primary_keys,
+        set_=update_dict,
+    )
+
+    # execute
+    with engine.connect() as conn:
+        result = conn.execute(update_stmt)
+        return result
+
+def UPSERT_process(**kwargs):
+    import pandas as pd
+    import sqlalchemy
+    
+    whstrcon = common.get_wh_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
+
+    rows = 0
+    tb_to = kwargs['To_Table']
+    strexec = ""
+
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        tmptable = "SELECT * FROM %s);" % (tb_to + '_tmp')
+        df = pd.read_sql_query(sql=sqlalchemy.text(tmptable), con=engine)
+        rows += len(df)
+        print(f"Got dataframe to Upsert {rows} rows")
+        # Load & transfrom
+        df = df.reset_index()
+        for index, row in df.iterrows():
+            print(f"Process {index}/{rows} rows")
+            rs = upsert(engine,'public',tb_to,row)
+            print(rs)
+    else:
+        strexec += ("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmp', tb_to))
+        strexec += ("ALTER TABLE %s ADD PRIMARY KEY (item_id);" % (tb_to))
+    strexec += ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+    # execute
+    with engine.connect() as conn:
+        conn.execute(strexec)
+        print("ETL WH Process finished")
+
 with DAG(
     dag_id='DWH_ETL_Machine_Delivery_dag',
     schedule_interval='30 7-20/1 * * *',
@@ -69,11 +148,19 @@ with DAG(
 ) as dag:
 
     # 1. Generate Machine Delivery from a DATA LAKE To DATA Warehouse
-    task_ETL_WH_MachineDelivery = PythonOperator(
-        task_id='etl_machinedelivery_data',
+    task_ET_WH_MachineDelivery = PythonOperator(
+        task_id='et_machinedelivery_data',
         provide_context=True,
         python_callable= ETL_process,
         op_kwargs={'To_Table': "machine_delivery", 'Chunk_Size': 2000}
     )
 
-    task_ETL_WH_MachineDelivery
+    # 2. Upsert Machine Delivery To DATA Warehouse
+    task_L_WH_MachineDelivery = PythonOperator(
+        task_id='l_machinedelivery_data',
+        provide_context=True,
+        python_callable= UPSERT_process,
+        op_kwargs={'To_Table': "machine_delivery"}
+    )
+
+    task_ET_WH_MachineDelivery >> task_L_WH_MachineDelivery

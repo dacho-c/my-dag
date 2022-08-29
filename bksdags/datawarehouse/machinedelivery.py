@@ -126,9 +126,10 @@ def UPSERT_process(**kwargs):
         rows += len(df)
         print(f"Got dataframe to Upsert {rows} rows")
         # Load & transfrom
-        df = df.reset_index()
+        #df = df.reset_index()
         for row in df.iterrows():
             n += 1
+            print(row)
             print(f"Process {n}/{rows} rows")
             rs = upsert(engine,'public',tb_to,row)
             print(rs)

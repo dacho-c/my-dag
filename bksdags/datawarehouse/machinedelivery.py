@@ -92,13 +92,13 @@ def upsert(engine, schema, table_name, records=[]):
         # we still wanna insert without errors
         insert_ignore(table_name, records)
         return None
-
+    print(update_dict)
     # assemble new statement with 'on conflict do update' clause
     update_stmt = stmt.on_conflict_do_update(
         index_elements=primary_keys,
         set_=update_dict,
     )
-
+    print(update_stmt)
     # execute
     with engine.connect() as conn:
         result = conn.execute(update_stmt)
@@ -121,7 +121,7 @@ def UPSERT_process(**kwargs):
     ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
     if result.loc[0,'exists']:
-        tmptable = "SELECT * FROM %s;" % (tb_to + '_tmp')
+        tmptable = "SELECT * FROM %s limit 10" % (tb_to + '_tmp')
         df = pd.read_sql_query(sql=sqlalchemy.text(tmptable), con=engine)
         rows += len(df)
         print(f"Got dataframe to Upsert {rows} rows")

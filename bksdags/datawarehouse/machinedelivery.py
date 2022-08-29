@@ -132,14 +132,14 @@ def UPSERT_process(**kwargs):
             print(f"Process {n}/{rows} rows")
             rs = upsert(engine,'public',tb_to,row)
             print(rs)
-    else:
-        strexec += ("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmp', tb_to))
-        strexec += ("ALTER TABLE %s ADD PRIMARY KEY (item_id);" % (tb_to))
-    strexec += ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+    #else:
+        #strexec += ("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmp', tb_to))
+        #strexec += ("ALTER TABLE %s ADD PRIMARY KEY (item_id);" % (tb_to))
+    #strexec += ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
     # execute
-    with engine.connect() as conn:
-        conn.execute(strexec)
-        print("ETL WH Process finished")
+    #with engine.connect() as conn:
+        #conn.execute(strexec)
+    print("ETL WH Process finished")
 
 with DAG(
     dag_id='DWH_ETL_Machine_Delivery_dag',

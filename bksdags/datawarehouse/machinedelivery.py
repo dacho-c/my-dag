@@ -104,8 +104,8 @@ def UPSERT_process(**kwargs):
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
     # Start Session
     Base = declarative_base()
-    session = sessionmaker()
-    session.configure(bind=engine)
+    session = sessionmaker(bind=engine)
+    session = session()
     Base.metadata.create_all(engine)
 
     n = 0
@@ -145,7 +145,7 @@ def INSERT_bluk(**kwargs):
     print("ETL WH Process finished")
 
 def branch_func(ti):
-    xcom_value = bool(ti.xcom_pull(task_ids="et_machinedelivery_data"))
+    xcom_value = bool(ti.xcom_pull(task_ids="et_machinedelivery_data", key='return_value'))
     if xcom_value:
         return "l_machinedelivery_data"
     else:

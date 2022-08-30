@@ -28,8 +28,16 @@ def ETL_process(**kwargs):
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
     engine_wh = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
     #conn_dl = engine_dl.connect().execution_options(stream_results=True)
-
-    sqlstr_main = sql_ET_machine_cust()
+    ETL_Status = False
+    cstr = ""
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine_wh)
+    if result.loc[0,'exists']:
+        ETL_Status = True
+        cstr = " and DATE(UR_LASTTIME) >= (current_date - 31)"
+    
+    sqlstr_main = sql_ET_machine_cust(cstr)
     sqlstr_mc = sql_ET_machine()
     sqlstr_inv = sql_ET_invoice()
 
@@ -68,13 +76,7 @@ def ETL_process(**kwargs):
         print(f"Save to data W/H {rows} rows")
     print("ETL Process finished")
 
-    # check exiting table
-    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
-    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine_wh)
-    if result.loc[0,'exists']:
-        return True
-    else:
-        return False
+    return ETL_Status
 
 def upsert(session, engine, schema, table_name, rows, no_update_cols=[]):
     

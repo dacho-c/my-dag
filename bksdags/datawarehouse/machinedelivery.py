@@ -163,7 +163,6 @@ with DAG(
     task_ET_WH_MachineDelivery = PythonOperator(
         task_id='et_machinedelivery_data',
         provide_context=True,
-        xcom_push=True,
         python_callable= ETL_process,
         op_kwargs={'To_Table': "machine_delivery", 'Chunk_Size': 2000}
     )

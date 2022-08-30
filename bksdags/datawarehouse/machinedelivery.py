@@ -1,18 +1,26 @@
 from datetime import datetime
 import pendulum
 from airflow.models import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
+import pandas as pd
+import sqlalchemy
+from sqlalchemy import Column, Integer, Date
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import MetaData, Table
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.inspection import inspect
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
 from pgsql_machinedelivery import sql_ET_machine_cust, sql_ET_machine, sql_ET_invoice
 
 def ETL_process(**kwargs):
-    import pandas as pd
-    import sqlalchemy
 
     whstrcon = common.get_wh_connection('')
     dlstrcon = common.get_dl_connection('')
@@ -30,7 +38,7 @@ def ETL_process(**kwargs):
 
     n = 0
     rows = 0
-    tb_to = kwargs['To_Table'] + "_tmp"
+    tb_to = kwargs['To_Table']
     c_size = kwargs['Chunk_Size']
 
     for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_dl, chunksize=c_size):
@@ -52,95 +60,96 @@ def ETL_process(**kwargs):
                 df_main.loc[index,'cus_group'] = 'Old'
         ##################
         if n == 0:
-            df_main.to_sql(tb_to, engine_wh, index=False, if_exists='replace')
+            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='replace')
             n = n + 1
         else:
-            df_main.to_sql(tb_to, engine_wh, index=False, if_exists='append')
+            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='append')
             n = n + 1
         print(f"Save to data W/H {rows} rows")
     print("ETL Process finished")
 
-def upsert(engine, schema, table_name, records=[]):
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine_wh)
+    if result.loc[0,'exists']:
+        return True
+    else:
+        return False
 
-    from sqlalchemy import MetaData, Table
-    from sqlalchemy.dialects import postgresql
-    from sqlalchemy.inspection import inspect
-
-
+def upsert(session, engine, schema, table_name, rows, no_update_cols=[]):
+    
     metadata = MetaData(schema=schema)
     metadata.bind = engine
 
     table = Table(table_name, metadata, schema=schema, autoload=True)
 
-    # get list of fields making up primary key
-    primary_keys = [key.name for key in inspect(table).primary_key]
+    stmt = insert(table).values(rows)
 
-    # assemble base statement
-    stmt = postgresql.insert(table).values(records)
+    update_cols = [c.name for c in table.c
+        if c not in list(table.primary_key.columns)
+        and c.name not in no_update_cols]
 
-    # define dict of non-primary keys for updating
-    update_dict = {
-        c.name: c
-        for c in stmt.excluded
-        if not c.primary_key
-    }
-
-    # cover case when all columns in table comprise a primary key
-    # in which case, upsert is identical to 'on conflict do nothing.
-    if update_dict == {}:
-        warnings.warn('no updateable columns found for table')
-        # we still wanna insert without errors
-        insert_ignore(table_name, records)
-        return None
-    print(update_dict)
-    # assemble new statement with 'on conflict do update' clause
-    update_stmt = stmt.on_conflict_do_update(
-        index_elements=primary_keys,
-        set_=update_dict,
-    )
-    print(update_stmt)
-    # execute
-    with engine.connect() as conn:
-        result = conn.execute(update_stmt)
-        return result
+    on_conflict_stmt = stmt.on_conflict_do_update(
+        index_elements=table.primary_key.columns,
+        set_={k: getattr(stmt.excluded, k) for k in update_cols}
+        #,
+        #index_where= ( as_of_date_col < getattr(stmt.excluded, as_of_date_col))
+        )
+    session.execute(on_conflict_stmt)
 
 def UPSERT_process(**kwargs):
-    import pandas as pd
-    import sqlalchemy
+    
+    whstrcon = common.get_wh_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
+    # Start Session
+    Base = declarative_base()
+    session = sessionmaker()
+    session.configure(bind=engine)
+    Base.metadata.create_all(engine)
+
+    n = 0
+    rows = 0
+    tb_to = kwargs['To_Table']
+
+    print('Initial state:\n')
+    df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from machine_delivery_tmp"), con=engine)
+    rows = len(df_main)
+    for index, row in df_main.iterrows():
+        print(f"Upsert progress {index + 1}/{rows}")
+        upsert(session,engine,'public','machine_delivery',row,[])
+    
+    print(f"Upsert Completed {rows} records.\n")
+    session.commit()
+    print('Upsert session commit.\n')
+    strexec = ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+    # execute
+    with engine.connect() as conn:
+        conn.execute(strexec)
+        print("Drop Temp Table.")
+
+def INSERT_bluk(**kwargs):
     
     whstrcon = common.get_wh_connection('')
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
 
-    n = 0
-    rows = 0
     tb_to = kwargs['To_Table']
-    strexec = ""
 
-    # check exiting table
-    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
-    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
-    if result.loc[0,'exists']:
-        tmptable = "SELECT * FROM %s limit 10" % (tb_to + '_tmp')
-        df = pd.read_sql_query(sql=sqlalchemy.text(tmptable), con=engine)
-        rows += len(df)
-        print(f"Got dataframe to Upsert {rows} rows")
-        # Load & transfrom
-        #df = df.reset_index()
-        for row in df.iterrows():
-            n += 1
-            print(row)
-            print(f"Process {n}/{rows} rows")
-            rs = upsert(engine,'public',tb_to,row)
-            print(rs)
-    #else:
-        #strexec += ("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmp', tb_to))
-        #strexec += ("ALTER TABLE %s ADD PRIMARY KEY (item_id);" % (tb_to))
-    #strexec += ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+    strexec = ("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmp', tb_to))
+    strexec += ("ALTER TABLE %s ADD PRIMARY KEY (item_id);" % (tb_to))
+    strexec += ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
     # execute
-    #with engine.connect() as conn:
-        #conn.execute(strexec)
+    with engine.connect() as conn:
+        conn.execute(strexec)
     print("ETL WH Process finished")
+
+def branch_func(ti):
+    xcom_value = int(ti.xcom_pull(task_ids="et_machinedelivery_data"))
+    if xcom_value:
+        return "l_machinedelivery_data"
+    else:
+        return "rp_machinedelivery_data"
 
 with DAG(
     dag_id='DWH_ETL_Machine_Delivery_dag',
@@ -154,6 +163,7 @@ with DAG(
     task_ET_WH_MachineDelivery = PythonOperator(
         task_id='et_machinedelivery_data',
         provide_context=True,
+        xcom_push=True,
         python_callable= ETL_process,
         op_kwargs={'To_Table': "machine_delivery", 'Chunk_Size': 2000}
     )
@@ -166,4 +176,18 @@ with DAG(
         op_kwargs={'To_Table': "machine_delivery"}
     )
 
-    task_ET_WH_MachineDelivery >> task_L_WH_MachineDelivery
+    # 3. Replace Machine Delivery Temp Table
+    task_RP_WH_MachineDelivery = PythonOperator(
+        task_id='rp_machinedelivery_data',
+        provide_context=True,
+        python_callable= INSERT_bluk,
+        op_kwargs={'To_Table': "machine_delivery"}
+    )
+
+    branch_op = BranchPythonOperator(
+        task_id="branch_task",
+        python_callable=branch_func,
+    )
+
+
+    task_ET_WH_MachineDelivery >> branch_op >> [task_L_WH_MachineDelivery, task_RP_WH_MachineDelivery]

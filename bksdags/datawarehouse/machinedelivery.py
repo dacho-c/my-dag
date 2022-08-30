@@ -145,7 +145,7 @@ def INSERT_bluk(**kwargs):
     print("ETL WH Process finished")
 
 def branch_func(ti):
-    xcom_value = int(ti.xcom_pull(task_ids="et_machinedelivery_data"))
+    xcom_value = bool(ti.xcom_pull(task_ids="et_machinedelivery_data"))
     if xcom_value:
         return "l_machinedelivery_data"
     else:

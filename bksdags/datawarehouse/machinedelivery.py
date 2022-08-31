@@ -28,6 +28,12 @@ def ETL_process(**kwargs):
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
     engine_wh = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
     #conn_dl = engine_dl.connect().execution_options(stream_results=True)
+
+    n = 0
+    rows = 0
+    tb_to = kwargs['To_Table']
+    c_size = kwargs['Chunk_Size']
+
     ETL_Status = False
     cstr = ""
     # check exiting table
@@ -35,7 +41,7 @@ def ETL_process(**kwargs):
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine_wh)
     if result.loc[0,'exists']:
         ETL_Status = True
-        cstr = " and DATE(UR_LASTTIME) >= (current_date - 31)"
+        cstr = " where DATE(UR_LASTTIME) >= (current_date - 31) or DATE(CUS_LASTTIME) >= (current_date - 31)"
     
     sqlstr_main = sql_ET_machine_cust(cstr)
     sqlstr_mc = sql_ET_machine()
@@ -43,11 +49,6 @@ def ETL_process(**kwargs):
 
     df_mc = pd.read_sql_query(sqlstr_mc, con=engine_dl)
     df_inv = pd.read_sql_query(sqlstr_inv, con=engine_dl)
-
-    n = 0
-    rows = 0
-    tb_to = kwargs['To_Table']
-    c_size = kwargs['Chunk_Size']
 
     for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_dl, chunksize=c_size):
         rows += len(df_main)
@@ -189,6 +190,5 @@ with DAG(
         task_id="branch_task",
         python_callable=branch_func,
     )
-
 
     task_ET_WH_MachineDelivery >> branch_op >> [task_L_WH_MachineDelivery, task_RP_WH_MachineDelivery]

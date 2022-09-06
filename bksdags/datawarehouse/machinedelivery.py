@@ -136,7 +136,6 @@ def INSERT_bluk(**kwargs):
 
     strexec = ("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmp', tb_to))
     strexec += ("ALTER TABLE %s ADD PRIMARY KEY (item_id);" % (tb_to))
-    strexec += ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
     # execute
     with engine.connect() as conn:
         conn.execute(strexec)
@@ -212,5 +211,5 @@ with DAG(
     )
     
     task_Upsert = task_CL_WH_MachineDelivery << task_L_WH_MachineDelivery
-
-    task_ET_WH_MachineDelivery >> branch_op >> [task_Upsert, task_RP_WH_MachineDelivery]
+    task_Replace = task_CL_WH_MachineDelivery << task_RP_WH_MachineDelivery
+    task_ET_WH_MachineDelivery >> branch_op >> [task_Upsert,task_Replace]

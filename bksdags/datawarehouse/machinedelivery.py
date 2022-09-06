@@ -124,12 +124,7 @@ def UPSERT_process(**kwargs):
     
     print(f"Upsert Completed {rows} records.\n")
     session.commit()
-    print('Upsert session commit.\n')
-    strexec = ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
-    # execute
-    with engine.connect() as conn:
-        conn.execute(strexec)
-        print("Drop Temp Table.")
+    print('Upsert session commit')
 
 def INSERT_bluk(**kwargs):
     
@@ -147,12 +142,29 @@ def INSERT_bluk(**kwargs):
         conn.execute(strexec)
     print("ETL WH Process finished")
 
+def Cleansing_process(**kwargs):
+    
+    whstrcon = common.get_wh_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+
+    # DELETE FROM table1 WHERE NOT (EXISTS (SELECT 1 
+    # FROM table2 
+    # WHERE table1.id = table2.table1_id))
+    strexec = ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+    # execute
+    with engine.connect() as conn:
+        conn.execute(strexec)
+        print("Drop Temp Table.")
+
 def branch_func(ti):
-    xcom_value = bool(ti.xcom_pull(task_ids="et_machinedelivery_data", key='return_value'))
+    xcom_value = bool(ti.xcom_pull(task_ids="extract_transform_machine_delivery_from_data_lake", key='return_value'))
     if xcom_value:
-        return "l_machinedelivery_data"
+        return "upsert_machine_delivery_on_data_warehouse"
     else:
-        return "rp_machinedelivery_data"
+        return "create_new_machine_delivery_table"
 
 with DAG(
     dag_id='DWH_ETL_Machine_Delivery_dag',
@@ -164,7 +176,7 @@ with DAG(
 
     # 1. Generate Machine Delivery from a DATA LAKE To DATA Warehouse
     task_ET_WH_MachineDelivery = PythonOperator(
-        task_id='et_machinedelivery_data',
+        task_id='extract_transform_machine_delivery_from_data_lake',
         provide_context=True,
         python_callable= ETL_process,
         op_kwargs={'To_Table': "machine_delivery", 'Chunk_Size': 2000}
@@ -172,7 +184,7 @@ with DAG(
 
     # 2. Upsert Machine Delivery To DATA Warehouse
     task_L_WH_MachineDelivery = PythonOperator(
-        task_id='l_machinedelivery_data',
+        task_id='upsert_machine_delivery_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
         op_kwargs={'To_Table': "machine_delivery"}
@@ -180,15 +192,23 @@ with DAG(
 
     # 3. Replace Machine Delivery Temp Table
     task_RP_WH_MachineDelivery = PythonOperator(
-        task_id='rp_machinedelivery_data',
+        task_id='create_new_machine_delivery_table',
         provide_context=True,
         python_callable= INSERT_bluk,
         op_kwargs={'To_Table': "machine_delivery"}
     )
 
+    # 4. Cleansing Machine Delivery Table
+    task_CL_WH_MachineDelivery = PythonOperator(
+        task_id='cleansing_machine_delivery_data',
+        provide_context=True,
+        python_callable= Cleansing_process,
+        op_kwargs={'To_Table': "machine_delivery"}
+    )
+
     branch_op = BranchPythonOperator(
-        task_id="branch_task",
+        task_id="check_existing_machine_delivery_on_data_warehouse",
         python_callable=branch_func,
     )
 
-    task_ET_WH_MachineDelivery >> branch_op >> [task_L_WH_MachineDelivery, task_RP_WH_MachineDelivery]
+    task_ET_WH_MachineDelivery >> branch_op >> [task_L_WH_MachineDelivery >> task_CL_WH_MachineDelivery, task_RP_WH_MachineDelivery]

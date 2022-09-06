@@ -211,6 +211,6 @@ with DAG(
         python_callable=branch_func,
     )
     
-    task_Upsert = task_L_WH_MachineDelivery >> task_CL_WH_MachineDelivery
+    task_Upsert = task_CL_WH_MachineDelivery << task_L_WH_MachineDelivery
 
     task_ET_WH_MachineDelivery >> branch_op >> [task_Upsert, task_RP_WH_MachineDelivery]

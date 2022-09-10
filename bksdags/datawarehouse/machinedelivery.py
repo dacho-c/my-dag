@@ -1,9 +1,12 @@
 from datetime import datetime
 import pendulum
 from airflow.models import DAG
+from airflow.operators.dummy import DummyOperator 
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.utils.edgemodifier import Label
+from airflow.utils.trigger_rule import TriggerRule
 
 import pandas as pd
 import sqlalchemy
@@ -209,7 +212,10 @@ with DAG(
         task_id="check_existing_machine_delivery_on_data_warehouse",
         python_callable=branch_func,
     )
-    
-    task_Upsert = task_L_WH_MachineDelivery
-    task_Replace = task_RP_WH_MachineDelivery
-    task_ET_WH_MachineDelivery >> branch_op >> [task_Upsert,task_Replace] >> task_CL_WH_MachineDelivery
+
+    branch_join = DummyOperator(
+        task_id='join',
+        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    )
+
+    task_ET_WH_MachineDelivery >> branch_op >> [task_L_WH_MachineDelivery,task_RP_WH_MachineDelivery] >> branch_join >> task_CL_WH_MachineDelivery

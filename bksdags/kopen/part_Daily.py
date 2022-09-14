@@ -10,7 +10,7 @@ from Class import common
 
 with DAG(
     dag_id='Kopen_Part_Daily_db2postgres_dag',
-    schedule_interval='0 5 * * *',
+    schedule_interval='30 5 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

@@ -13,10 +13,10 @@ class common(object):
         config = configparser.ConfigParser()
         config.read(Variable.get('db2pg_config'))
         pgdatabase = Variable.get('dl_database')
-        pghost = Variable.get('wh_host')
-        pgport = Variable.get('dl_port')
-        pguid = config['PG']['uid']
-        pgpwd = config['PG']['pwd']
+        pghost = Variable.get('db_host')
+        pgport = Variable.get('pgsl2_port')
+        pguid = Variable.get('uid')
+        pgpwd = Variable.get('pwd')
         # Connection String to Postgres DATA Lake
         pgstrcon = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (pguid,pgpwd,pghost,pgport,pgdatabase)
         return pgstrcon
@@ -25,10 +25,10 @@ class common(object):
         config = configparser.ConfigParser()
         config.read(Variable.get('db2pg_config'))
         pgdatabase = Variable.get('wh_database')
-        pghost = Variable.get('wh_host')
-        pgport = Variable.get('wh_port')
-        pguid = config['PG']['uid']
-        pgpwd = config['PG']['pwd']
+        pghost = Variable.get('db_host')
+        pgport = Variable.get('pg_port')
+        pguid = Variable.get('uid')
+        pgpwd = Variable.get('pwd')
         # Connection String to Postgres DATA Warehouse
         pgstrcon = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (pguid,pgpwd,pghost,pgport,pgdatabase)
         return pgstrcon

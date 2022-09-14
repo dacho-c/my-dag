@@ -14,10 +14,10 @@ class common(object):
         config = configparser.ConfigParser()
         config.read(Variable.get('db2pg_config'))
         pgdatabase = Variable.get('dl_database')
-        pghost = Variable.get('wh_host')
-        pgport = Variable.get('wh_port')
-        pguid = config['PG']['uid']
-        pgpwd = config['PG']['pwd']
+        pghost = Variable.get('db_host')
+        pgport = Variable.get('pg_port')
+        pguid = Variable.get('uid')
+        pgpwd = Variable.get('pwd')
         # Connection String to Postgres DATA Lake
         pgstrcon = "postgresql+psycopg2://%s:%s@%s:%s/%s" % (pguid,pgpwd,pghost,pgport,pgdatabase)
         return pgstrcon
@@ -25,12 +25,11 @@ class common(object):
     def get_db2_connection(self):
         config = configparser.ConfigParser()
         config.read(Variable.get('db2pg_config'))
-        db2database = config['DB2']['database']
-        db2host = config['DB2']['host']
-        db2port = config['DB2']['port']
-        db2protocal = config['DB2']['protocal']
-        db2uid = config['DB2']['uid']
-        db2pwd = config['DB2']['pwd']
+        db2database = Variable.get('db2_database')
+        db2host = Variable.get('db_host')
+        db2port = Variable.get('db2_port')
+        db2uid = Variable.get('db2uid')
+        db2pwd = Variable.get('db2pwd')
         # Connection String to EGKopen db2
         db2strcon = "db2://%s:%s@%s:%s/%s" % (db2uid, db2pwd, db2host, db2port, db2database)
         return db2strcon

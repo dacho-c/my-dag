@@ -14,7 +14,7 @@ class common(object):
         config.read(Variable.get('db2pg_config'))
         pgdatabase = Variable.get('dl_database')
         pghost = Variable.get('db_host')
-        pgport = Variable.get('pgsl2_port')
+        pgport = Variable.get('pgsl_port')
         pguid = Variable.get('uid')
         pgpwd = Variable.get('pwd')
         # Connection String to Postgres DATA Lake

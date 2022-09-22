@@ -15,8 +15,7 @@ def ETL_process(**kwargs):
     import pandas as pd
     import sqlalchemy
 
-    #whstrcon = common.get_wh_connection('')
-    whstrcon = "postgresql+psycopg2://dataetl:bks1234@147.50.133.49:30202/bks_dtwh"
+    whstrcon = common.get_wh_connection('')
     dlstrcon = common.get_dl_connection('')
     # Create SQLAlchemy engine
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")

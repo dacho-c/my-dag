@@ -24,7 +24,7 @@ with DAG(
         task_id='etl_kopen_service_job_data',
         provide_context=True,
         python_callable=common.read_load_update_data,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Condition': "smm_account_month >= '%s'" % ( get_first_ym_fisical_year() )}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Condition': "smm_account_month >= '%s'" % (get_first_ym_fisical_year())}
     )
 
     task_ETL_Kopen_Service_Job_data

@@ -1,6 +1,5 @@
-
-import pandas as pd
 import datetime
+import pandas as pd
 
 def get_last_ym():
     today = datetime.date.today()
@@ -46,4 +45,13 @@ def get_lastdate_last_m():
     lastMonth = first - datetime.timedelta(days=1)
     return lastMonth.strftime("%Y-%m-%d")
 
-# get fisical year
+def get_first_ym_fisical_year():
+    today = datetime.date.today()
+    m = today.month
+    if (m >= 4):
+        today = today.replace(month=4)
+    else:
+        y = today.year - 1
+        today = today.replace(year=y)
+        today = today.replace(month=4)
+    return today.strftime("%Y%m")

@@ -1,48 +1,153 @@
 from datetime import datetime
 import pendulum
 from airflow.models import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.dummy import DummyOperator 
+from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.utils.edgemodifier import Label
+from airflow.utils.trigger_rule import TriggerRule
 
+import pandas as pd
+import sqlalchemy
+from sqlalchemy import Column, Integer, Date
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import MetaData, Table
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.inspection import inspect
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
+
 from function import get_last_ym
 from pgsql_salesbyitem import sql_ET_salesbyitem, sql_DEL_salesbyitem
 
 def ETL_process(**kwargs):
-    import pandas as pd
-    import sqlalchemy
 
     whstrcon = common.get_wh_connection('')
     dlstrcon = common.get_dl_connection('')
     # Create SQLAlchemy engine
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
     engine_wh = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
-    conn_dl = engine_dl.connect().execution_options(stream_results=True)
-
-    sqlstr = sql_ET_salesbyitem(get_last_ym())
 
     n = 0
     rows = 0
     tb_to = kwargs['To_Table']
     c_size = kwargs['Chunk_Size']
 
-    for chunk_df in pd.read_sql_query(sql=sqlalchemy.text(sqlstr), con=engine_dl, chunksize=c_size):
-        rows += len(chunk_df)
+    ETL_Status = False
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine_wh)
+    if result.loc[0,'exists']:
+        ETL_Status = True
+    
+    sqlstr_main = sql_ET_salesbyitem(get_last_ym())
+
+    for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_dl, chunksize=c_size):
+        rows += len(df_main)
         print(f"Got dataframe w/{rows} rows")
-        # Load to DB-LAKE not transfrom
+        # Load & transfrom
+        ##################
         if n == 0:
-            ######
-            with engine_wh.connect().execution_options(autocommit=True) as conn:
-                conn.execute(sqlalchemy.text(sql_DEL_salesbyitem(get_last_ym())))
-            chunk_df.to_sql(tb_to, engine_wh, index=False, if_exists='append')
+            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='replace')
             n = n + 1
         else:
-            chunk_df.to_sql(tb_to, engine_wh, index=False, if_exists='append')
+            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='append')
+            n = n + 1
         print(f"Save to data W/H {rows} rows")
     print("ETL Process finished")
+
+    return ETL_Status
+
+def upsert(session, engine, schema, table_name, rows, no_update_cols=[]):
+    
+    metadata = MetaData(schema=schema)
+    metadata.bind = engine
+
+    table = Table(table_name, metadata, schema=schema, autoload=True)
+
+    stmt = insert(table).values(rows)
+
+    update_cols = [c.name for c in table.c
+        if c not in list(table.primary_key.columns)
+        and c.name not in no_update_cols]
+
+    on_conflict_stmt = stmt.on_conflict_do_update(
+        index_elements=table.primary_key.columns,
+        set_={k: getattr(stmt.excluded, k) for k in update_cols}
+        #,
+        #index_where= ( as_of_date_col < getattr(stmt.excluded, as_of_date_col))
+        )
+    session.execute(on_conflict_stmt)
+
+def UPSERT_process(**kwargs):
+    
+    whstrcon = common.get_wh_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
+    # Start Session
+    Base = declarative_base()
+    session = sessionmaker(bind=engine)
+    session = session()
+    Base.metadata.create_all(engine)
+
+    n = 0
+    rows = 0
+    tb_to = kwargs['To_Table']
+
+    print('Initial state:\n')
+    df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine)
+    rows = len(df_main)
+    for index, row in df_main.iterrows():
+        print(f"Upsert progress {index + 1}/{rows}")
+        upsert(session,engine,'public',tb_to,row,[])
+    
+    print(f"Upsert Completed {rows} records.\n")
+    session.commit()
+    print('Upsert session commit')
+
+def INSERT_bluk(**kwargs):
+    
+    whstrcon = common.get_wh_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+
+    strexec = ("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmp', tb_to))
+    strexec += ("ALTER TABLE %s ADD PRIMARY KEY (item_id);" % (tb_to))
+    # execute
+    with engine.connect() as conn:
+        conn.execute(strexec)
+    print("ETL WH Process finished")
+
+def Cleansing_process(**kwargs):
+    
+    whstrcon = common.get_wh_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+
+    # DELETE FROM table1 WHERE NOT (EXISTS (SELECT 1 
+    # FROM table2 
+    # WHERE table1.id = table2.table1_id))
+    strexec = ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+    # execute
+    with engine.connect() as conn:
+        conn.execute(strexec)
+        print("Drop Temp Table.")
+
+def branch_func(ti):
+    xcom_value = bool(ti.xcom_pull(task_ids="etl_salesbyitem_from_datalake", key='return_value'))
+    if xcom_value:
+        return "upsert_sales_by_item_on_data_warehouse"
+    else:
+        return "create_new_sales_by_item_table"
 
 with DAG(
     dag_id='DWH_ETL_SalesByItem_dag',
@@ -54,10 +159,44 @@ with DAG(
 
     # 1. Generate Sales By Item from a DATA LAKE To DATA Warehouse
     task_ETL_WH_SalesByItem = PythonOperator(
-        task_id='etl_salesbyitem_data',
+        task_id='etl_salesbyitem_from_datalake',
         provide_context=True,
         python_callable=ETL_process,
         op_kwargs={'To_Table': "sales_by_item", 'Chunk_Size': 50000}
     )
 
-    task_ETL_WH_SalesByItem
+    # 2. Upsert Sales By Item To DATA Warehouse
+    task_L_WH_SalesByItem = PythonOperator(
+        task_id='upsert_sales_by_item_on_data_warehouse',
+        provide_context=True,
+        python_callable= UPSERT_process,
+        op_kwargs={'To_Table': "sales_by_item"}
+    )
+
+    # 3. Replace Sales By Item Temp Table
+    task_RP_WH_SalesByItem = PythonOperator(
+        task_id='create_new_sales_by_item_table',
+        provide_context=True,
+        python_callable= INSERT_bluk,
+        op_kwargs={'To_Table': "sales_by_item"}
+    )
+
+    # 4. Cleansing Sales By Item Table
+    task_CL_WH_SalesByItem = PythonOperator(
+        task_id='cleansing_sales_by_item_data',
+        provide_context=True,
+        python_callable= Cleansing_process,
+        op_kwargs={'To_Table': "sales_by_item"}
+    )
+
+    branch_op = BranchPythonOperator(
+        task_id="check_existing_sales_by_item_on_data_warehouse",
+        python_callable=branch_func,
+    )
+
+    branch_join = DummyOperator(
+        task_id='join',
+        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    )
+
+    task_ETL_WH_SalesByItem >> branch_op >> [task_L_WH_SalesByItem,task_RP_WH_SalesByItem] >> branch_join >> task_CL_WH_SalesByItem

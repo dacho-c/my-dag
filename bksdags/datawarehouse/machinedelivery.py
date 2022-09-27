@@ -119,11 +119,11 @@ def UPSERT_process(**kwargs):
     tb_to = kwargs['To_Table']
 
     print('Initial state:\n')
-    df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from machine_delivery_tmp"), con=engine)
+    df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine)
     rows = len(df_main)
     for index, row in df_main.iterrows():
         print(f"Upsert progress {index + 1}/{rows}")
-        upsert(session,engine,'public','machine_delivery',row,[])
+        upsert(session,engine,'public',tb_to,row,[])
     
     print(f"Upsert Completed {rows} records.\n")
     session.commit()

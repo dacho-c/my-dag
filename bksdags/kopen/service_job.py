@@ -1,5 +1,4 @@
 from datetime import datetime
-from bksdags.kopen.function import get_Last_fisical_year
 import pendulum
 from airflow.models import DAG
 from airflow.operators.python import PythonOperator

@@ -23,7 +23,7 @@ sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
 
 from function import get_last_ym
-from pgsql_salesbyitem import sql_ET_salesbyitem, sql_DEL_salesbyitem
+from pgsql_salesbyitem import sql_ET_salesbyitem
 
 def ETL_process(**kwargs):
 
@@ -108,6 +108,7 @@ def UPSERT_process(**kwargs):
     
     print(f"Upsert Completed {rows} records.\n")
     session.commit()
+    session.close()
     print('Upsert session commit')
 
 def INSERT_bluk(**kwargs):
@@ -123,7 +124,8 @@ def INSERT_bluk(**kwargs):
     # execute
     with engine.connect() as conn:
         conn.execute(strexec)
-    print("ETL WH Process finished")
+        print("ETL WH Process finished")
+        conn.close()
 
 def Cleansing_process(**kwargs):
     
@@ -141,7 +143,8 @@ def Cleansing_process(**kwargs):
     with engine.connect() as conn:
         conn.execute(strexec)
         print("Drop Temp Table.")
-
+        conn.close()
+        
 def branch_func(ti):
     xcom_value = bool(ti.xcom_pull(task_ids="etl_salesbyitem_from_datalake", key='return_value'))
     if xcom_value:

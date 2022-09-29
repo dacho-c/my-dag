@@ -30,7 +30,6 @@ def ETL_process(**kwargs):
     # Create SQLAlchemy engine
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
     engine_wh = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
-    #conn_dl = engine_dl.connect().execution_options(stream_results=True)
 
     n = 0
     rows = 0
@@ -127,6 +126,7 @@ def UPSERT_process(**kwargs):
     
     print(f"Upsert Completed {rows} records.\n")
     session.commit()
+    session.close()
     print('Upsert session commit')
 
 def INSERT_bluk(**kwargs):
@@ -142,7 +142,8 @@ def INSERT_bluk(**kwargs):
     # execute
     with engine.connect() as conn:
         conn.execute(strexec)
-    print("ETL WH Process finished")
+        print("ETL WH Process finished")
+        conn.close()
 
 def Cleansing_process(**kwargs):
     
@@ -151,15 +152,20 @@ def Cleansing_process(**kwargs):
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
 
     tb_to = kwargs['To_Table']
+    primary_key = 'item_id'
+    C_condition = ''
 
-    # DELETE FROM table1 WHERE NOT (EXISTS (SELECT 1 
-    # FROM table2 
-    # WHERE table1.id = table2.table1_id))
-    strexec = ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
-    # execute
-    with engine.connect() as conn:
-        conn.execute(strexec)
-        print("Drop Temp Table.")
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to + '_tmp')
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        strexec = ("DELETE FROM %s WHERE NOT (EXISTS (SELECT %s FROM %s WHERE %s.%s = %s.%s)) %s;") % (tb_to, primary_key, tb_to + '_tmp',tb_to,primary_key,tb_to + '_tmp',primary_key,C_condition)
+        # execute
+        with engine.connect() as conn:
+            conn.execute(strexec)
+            print("Drop Temp Table.")
+            conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+            conn.close()
 
 def branch_func(ti):
     xcom_value = bool(ti.xcom_pull(task_ids="extract_transform_machine_delivery_from_data_lake", key='return_value'))

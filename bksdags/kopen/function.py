@@ -1,6 +1,9 @@
 import datetime
 import pandas as pd
 
+def get_last_ym1():
+    return '202201'
+
 def get_last_ym():
     today = datetime.date.today()
     first = today.replace(day=1)

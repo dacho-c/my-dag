@@ -63,18 +63,9 @@ def ETL_process(**kwargs):
 
     return ETL_Status
 
-def upsert(session, engine, schema, table_name, rows, no_update_cols=[]):
-    
-    metadata = MetaData(schema=schema)
-    metadata.bind = engine
-
-    table = Table(table_name, metadata, schema=schema, autoload=True)
+def upsert(session, table, update_cols, rows):
 
     stmt = insert(table).values(rows)
-
-    update_cols = [c.name for c in table.c
-        if c not in list(table.primary_key.columns)
-        and c.name not in no_update_cols]
 
     on_conflict_stmt = stmt.on_conflict_do_update(
         index_elements=table.primary_key.columns,
@@ -98,13 +89,23 @@ def UPSERT_process(**kwargs):
     n = 0
     rows = 0
     tb_to = kwargs['To_Table']
+    schema = 'public'
+    no_update_cols = []
 
     print('Initial state:\n')
     df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine)
     rows = len(df_main)
-    for index, row in df_main.iterrows():
-        print(f"Upsert progress {index + 1}/{rows}")
-        upsert(session,engine,'public',tb_to,row,[])
+    if (rows > 0):
+        metadata = MetaData(schema=schema)
+        metadata.bind = engine
+        table = Table(tb_to, metadata, schema=schema, autoload=True)
+        update_cols = [c.name for c in table.c
+            if c not in list(table.primary_key.columns)
+            and c.name not in no_update_cols]
+
+        for index, row in df_main.iterrows():
+            print(f"Upsert progress {index + 1}/{rows}")
+            upsert(session,table,update_cols,row)
     
     print(f"Upsert Completed {rows} records.\n")
     session.commit()
@@ -134,16 +135,20 @@ def Cleansing_process(**kwargs):
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
 
     tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+    C_condition = kwargs['Condition']
 
-    # DELETE FROM table1 WHERE NOT (EXISTS (SELECT 1 
-    # FROM table2 
-    # WHERE table1.id = table2.table1_id))
-    strexec = ("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
-    # execute
-    with engine.connect() as conn:
-        conn.execute(strexec)
-        print("Drop Temp Table.")
-        conn.close()
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to + '_tmp')
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        strexec = ("DELETE FROM %s WHERE NOT (EXISTS (SELECT %s FROM %s WHERE %s.%s = %s.%s)) %s;") % (tb_to, primary_key, tb_to + '_tmp',tb_to,primary_key,tb_to + '_tmp',primary_key,C_condition)
+        # execute
+        with engine.connect() as conn:
+            conn.execute(strexec)
+            print("Drop Temp Table.")
+            conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
+            conn.close()
         
 def branch_func(ti):
     xcom_value = bool(ti.xcom_pull(task_ids="etl_salesbyitem_from_datalake", key='return_value'))
@@ -189,7 +194,7 @@ with DAG(
         task_id='cleansing_sales_by_item_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sales_by_item"}
+        op_kwargs={'To_Table': "sales_by_item", 'Key': "item_id", 'Condition': " where pih_account_month >= '%s'" % (get_last_ym())}
     )
 
     branch_op = BranchPythonOperator(

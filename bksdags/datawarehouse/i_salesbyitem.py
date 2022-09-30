@@ -194,7 +194,7 @@ with DAG(
         task_id='cleansing_sales_by_item_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sales_by_item", 'Key': "item_id", 'Condition': " where pih_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'To_Table': "sales_by_item", 'Key': "item_id", 'Condition': " and pih_account_month >= '%s'" % (get_last_ym())}
     )
 
     branch_op = BranchPythonOperator(

@@ -21,7 +21,7 @@ from sqlalchemy.inspection import inspect
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
-from function import get_last_ym1 as get_last_ym
+from function import get_last_ym
 
 def ETL_process(**kwargs):
 
@@ -194,7 +194,7 @@ with DAG(
         task_id='cleansing_service_job_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " and smm_account_month >= '%s'" % (get_last_ym())}
     )
 
     branch_op = BranchPythonOperator(

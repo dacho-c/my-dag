@@ -81,18 +81,9 @@ def ETL_process(**kwargs):
 
     return ETL_Status
 
-def upsert(session, engine, schema, table_name, rows, no_update_cols=[]):
-    
-    metadata = MetaData(schema=schema)
-    metadata.bind = engine
-
-    table = Table(table_name, metadata, schema=schema, autoload=True)
+def upsert(session, table, update_cols, rows):
 
     stmt = insert(table).values(rows)
-
-    update_cols = [c.name for c in table.c
-        if c not in list(table.primary_key.columns)
-        and c.name not in no_update_cols]
 
     on_conflict_stmt = stmt.on_conflict_do_update(
         index_elements=table.primary_key.columns,
@@ -116,13 +107,23 @@ def UPSERT_process(**kwargs):
     n = 0
     rows = 0
     tb_to = kwargs['To_Table']
+    schema = 'public'
+    no_update_cols = []
 
     print('Initial state:\n')
     df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine)
     rows = len(df_main)
-    for index, row in df_main.iterrows():
-        print(f"Upsert progress {index + 1}/{rows}")
-        upsert(session,engine,'public',tb_to,row,[])
+    if (rows > 0):
+        metadata = MetaData(schema=schema)
+        metadata.bind = engine
+        table = Table(tb_to, metadata, schema=schema, autoload=True)
+        update_cols = [c.name for c in table.c
+            if c not in list(table.primary_key.columns)
+            and c.name not in no_update_cols]
+
+        for index, row in df_main.iterrows():
+            print(f"Upsert progress {index + 1}/{rows}")
+            upsert(session,table,update_cols,row)
     
     print(f"Upsert Completed {rows} records.\n")
     session.commit()
@@ -152,8 +153,8 @@ def Cleansing_process(**kwargs):
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
 
     tb_to = kwargs['To_Table']
-    primary_key = 'item_id'
-    C_condition = ''
+    primary_key = kwargs['Key']
+    C_condition = kwargs['Condition']
 
     # check exiting table
     ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to + '_tmp')
@@ -211,7 +212,7 @@ with DAG(
         task_id='cleansing_machine_delivery_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "machine_delivery"}
+        op_kwargs={'To_Table': "machine_delivery", 'Key': "item_id", 'Condition': ""}
     )
 
     branch_op = BranchPythonOperator(

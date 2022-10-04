@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pendulum
 from airflow.models import DAG
 from airflow.providers.http.sensors.http import HttpSensor
@@ -20,7 +20,11 @@ with DAG(
     task_is_api_active = HttpSensor(
         task_id='is_api_active',
         http_conn_id='bks_api',
-        endpoint='genreport/'
+        endpoint='genreport/',
+        execution_timeout=timedelta(seconds=120),
+        timeout=3600,
+        retries=3,
+        mode="reschedule",
     )
 
     # 2. Auto send mail

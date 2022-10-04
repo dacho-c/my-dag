@@ -4,6 +4,12 @@ import pandas as pd
 def get_last_ym1():
     return '202201'
 
+def get_last_m_datetime():
+    today = datetime.date.today()
+    first = today.replace(day=1)
+    lastMonth = first - datetime.timedelta(days=1)
+    return lastMonth.strftime("%Y-%m-") + '01 00:00:00'
+
 def get_last_ym():
     today = datetime.date.today()
     first = today.replace(day=1)

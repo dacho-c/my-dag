@@ -21,7 +21,7 @@ from sqlalchemy.inspection import inspect
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
-from function import get_last_ym
+from function import get_last_m_datetime
 
 def ETL_process(**kwargs):
 
@@ -170,7 +170,7 @@ with DAG(
         task_id='etl_kopen_service_job_data',
         provide_context=True,
         python_callable=ETL_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     # 2. Upsert Service Job To DATA Warehouse
@@ -178,7 +178,7 @@ with DAG(
         task_id='upsert_service_job_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     # 3. Replace Service Job Temp Table
@@ -186,7 +186,7 @@ with DAG(
         task_id='create_new_service_job_table',
         provide_context=True,
         python_callable= INSERT_bluk,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     # 4. Cleansing Service Job Table
@@ -194,7 +194,7 @@ with DAG(
         task_id='cleansing_service_job_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " and smm_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " and smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     branch_op = BranchPythonOperator(

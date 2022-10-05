@@ -33,7 +33,6 @@ with DAG(
         http_conn_id='bks_api',
         method='GET',
         endpoint='etl/sf/sfaccount',
-        timeout=1200,
     )
 
     task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake

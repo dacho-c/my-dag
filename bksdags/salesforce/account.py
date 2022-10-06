@@ -108,10 +108,26 @@ def Cleansing_process(**kwargs):
             print("Drop Temp Table.")
             conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
             conn.close()
-        
+
+def Check_exiting(**kwargs):
+    
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        return True
+    else:
+        return False   
+
 def branch_func(ti):
-    xcom_value = ti.xcom_pull(task_ids="get_salesforce_account_object", key='return_value')
-    if (xcom_value == 'true'):
+    xcom_value = bool(ti.xcom_pull(task_ids="get_salesforce_account_object", key='return_value'))
+    if xcom_value:
         return "upsert_sf_account_on_data_lake"
     else:
         return "create_new_sf_account_table"
@@ -168,6 +184,14 @@ with DAG(
         op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'Id', 'Condition': ""}
     )
 
+    # 6. Check Exiting Salesforce Table
+    task_CK_DL_SF_account = PythonOperator(
+        task_id='check_exit_sf_account_data',
+        provide_context=True,
+        python_callable= Check_exiting,
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'Id', 'Condition': ""}
+    )
+
     branch_op = BranchPythonOperator(
         task_id="check_existing_sf_account_on_data_lake",
         python_callable=branch_func,
@@ -178,4 +202,4 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> branch_op >> [task_L_DL_SF_account, task_RP_DL_SF_account] >> branch_join >> task_CL_DL_SF_account
+    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_account >> branch_op >> [task_L_DL_SF_account, task_RP_DL_SF_account] >> branch_join >> task_CL_DL_SF_account

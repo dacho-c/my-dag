@@ -23,51 +23,6 @@ sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 #from function import get_yesterday
 from Class import common
 
-def LT_process(**kwargs):
-
-    dlstrcon = common.get_pg_connection('')
-    # Create SQLAlchemy engine
-    engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
-
-    n = 0
-    rows = 0
-    tb_to = kwargs['To_Table']
-    c_size = kwargs['Chunk_Size']
-    C_condition = kwargs['Condition']
-
-    LT_Status = False
-    # check exiting table
-    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to + '_tmp')
-    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine_dl)
-    if result.loc[0,'exists']:
-
-        sqlstr_main = "SELECT * FROM " + tb_to + '_tmp ' + C_condition
-
-        for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_dl, chunksize=c_size):
-            rows += len(df_main)
-            print(f"Got dataframe w/{rows} rows")
-            # Load & transfrom
-            ##################
-            if n == 0:
-                df_main.to_sql(tb_to + "_tmpc", engine_dl, index=False, if_exists='replace')
-                n = n + 1
-            else:
-                df_main.to_sql(tb_to + "_tmpc", engine_dl, index=False, if_exists='append')
-                n = n + 1
-            print(f"Save to data W/H {rows} rows")
-        print("ETL Process finished")
-
-        LT_Status = True
-        # execute
-        with engine_dl.connect() as conn:
-            print("Drop Temp Table.")
-            conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
-            print("Rename Temp Table.")
-            conn.execute("ALTER TABLE IF EXISTS %s RENAME TO %s;" % (tb_to + '_tmpc', tb_to + '_tmp'))
-            conn.close()
-
-    return LT_Status
-
 def upsert(session, table, update_cols, rows):
 
     stmt = insert(table).values(rows)
@@ -211,7 +166,7 @@ with DAG(
         task_id='upsert_sf_account_on_data_lake',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     # 4. Replace Salesforce Temp Table
@@ -219,7 +174,7 @@ with DAG(
         task_id='create_new_sf_account_table',
         provide_context=True,
         python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     # 5. Cleansing Salesforce Table
@@ -227,7 +182,7 @@ with DAG(
         task_id='cleansing_sf_account_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     # 6. Check Exiting Salesforce Table
@@ -235,15 +190,7 @@ with DAG(
         task_id='check_exit_sf_account_data',
         provide_context=True,
         python_callable= Check_exiting,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
-    )
-
-    # 1.1 Transfrom temp table
-    task_LT_SF_account_data = PythonOperator(
-        task_id='lt_sf_account_temp_data',
-        provide_context=True,
-        python_callable=LT_process,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     branch_op = BranchPythonOperator(
@@ -256,4 +203,4 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_LT_SF_account_data >> task_CK_DL_SF_account >> branch_op >> [task_L_DL_SF_account, task_RP_DL_SF_account] >> branch_join >> task_CL_DL_SF_account
+    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_account >> branch_op >> [task_L_DL_SF_account, task_RP_DL_SF_account] >> branch_join >> task_CL_DL_SF_account

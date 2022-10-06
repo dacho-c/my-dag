@@ -126,7 +126,7 @@ def Check_exiting(**kwargs):
         return False   
 
 def branch_func(ti):
-    xcom_value = bool(ti.xcom_pull(task_ids="get_salesforce_account_object", key='return_value'))
+    xcom_value = bool(ti.xcom_pull(task_ids="check_exit_sf_account_data", key='return_value'))
     if xcom_value:
         return "upsert_sf_account_on_data_lake"
     else:

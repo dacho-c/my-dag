@@ -165,7 +165,7 @@ with DAG(
         task_id='upsert_sf_account_on_data_lake',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'Id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
     )
 
     # 4. Replace Salesforce Temp Table
@@ -173,7 +173,7 @@ with DAG(
         task_id='create_new_sf_account_table',
         provide_context=True,
         python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'Id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
     )
 
     # 5. Cleansing Salesforce Table
@@ -181,7 +181,7 @@ with DAG(
         task_id='cleansing_sf_account_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'Id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
     )
 
     # 6. Check Exiting Salesforce Table
@@ -189,7 +189,7 @@ with DAG(
         task_id='check_exit_sf_account_data',
         provide_context=True,
         python_callable= Check_exiting,
-        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'Id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 5000, 'Key': 'ID__c', 'Condition': ""}
     )
 
     branch_op = BranchPythonOperator(

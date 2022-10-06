@@ -110,8 +110,8 @@ def Cleansing_process(**kwargs):
             conn.close()
         
 def branch_func(ti):
-    xcom_value = bool(ti.xcom_pull(task_ids="get_salesforce_account_object", key='return_value'))
-    if xcom_value:
+    xcom_value = ti.xcom_pull(task_ids="get_salesforce_account_object", key='return_value')
+    if (xcom_value == 'true'):
         return "upsert_sf_account_on_data_lake"
     else:
         return "create_new_sf_account_table"

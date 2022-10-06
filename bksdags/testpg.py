@@ -53,12 +53,12 @@ def process_iris_data(ti):
             a.writerows(iris)
 
 
-with DAG(
-    dag_id='postgres_db_dag',
-    schedule_interval='@daily',
-    start_date=datetime(year=2022, month=2, day=1),
-    catchup=False
-) as dag:
+#with DAG(
+    #dag_id='postgres_db_dag',
+    #schedule_interval='@daily',
+    #start_date=datetime(year=2022, month=2, day=1),
+    #catchup=False
+#) as dag:
 
     # 1. Get the Iris data from a table in Postgres
     task_get_iris_data = PythonOperator(

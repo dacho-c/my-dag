@@ -136,7 +136,7 @@ def branch_func(ti):
 with DAG(
     dag_id='Salesforce_Order_ETL_dag',
     tags=['Salesforce'],
-    schedule_interval='8 6-18/4 * * *',
+    schedule_interval='12 6-18/4 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
@@ -159,6 +159,7 @@ with DAG(
         http_conn_id='bks_api',
         method='GET',
         endpoint='etl/sf/sforder',
+        log_response=True
     )
 
     # 3. Upsert Salesforce To DATA Lake

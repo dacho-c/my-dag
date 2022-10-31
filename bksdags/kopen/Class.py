@@ -1,4 +1,3 @@
-from functools import cache
 import time
 import pandas as pd
 import configparser

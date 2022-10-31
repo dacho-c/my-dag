@@ -2,7 +2,6 @@ import time
 import pandas as pd
 import configparser
 from sqlalchemy import create_engine, delete
-from goto import goto, label
 #import datetime
 from airflow.models import Variable
 
@@ -36,7 +35,6 @@ class common(object):
         return db2strcon
 
     def read_load_save_data(**kwargs): 
-        label .reconnect
         try:
             db2strcon = common.get_db2_connection('')
             # Create SQLAlchemy engine
@@ -45,7 +43,11 @@ class common(object):
         except:
             time.sleep(5)
             print("DB2 Connect Error Sleep 5s")
-            goto .reconnect
+            db2strcon = common.get_db2_connection('')
+            # Create SQLAlchemy engine
+            engine_db2 = create_engine(db2strcon)
+            conn_db2 = engine_db2.connect().execution_options(stream_results=True)
+        
         pgstrcon = common.get_pg_connection('')
         # Create SQLAlchemy engine
         engine_pg = create_engine(pgstrcon,client_encoding="utf8")
@@ -103,7 +105,6 @@ class common(object):
         return True
 
     def read_load_update_data(**kwargs): 
-        label .reconnect
         try:
             db2strcon = common.get_db2_connection('')
             # Create SQLAlchemy engine
@@ -112,7 +113,10 @@ class common(object):
         except:
             time.sleep(5)
             print("DB2 Connect Error Sleep 5s")
-            goto .reconnect
+            db2strcon = common.get_db2_connection('')
+            # Create SQLAlchemy engine
+            engine_db2 = create_engine(db2strcon)
+            conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
         pgstrcon = common.get_pg_connection('')
         # Create SQLAlchemy engine
@@ -146,7 +150,6 @@ class common(object):
         return True
 
     def read_load_update_detail_data(**kwargs): 
-        label .reconnect
         try:
             db2strcon = common.get_db2_connection('')
             # Create SQLAlchemy engine
@@ -155,7 +158,10 @@ class common(object):
         except:
             time.sleep(5)
             print("DB2 Connect Error Sleep 5s")
-            goto .reconnect
+            db2strcon = common.get_db2_connection('')
+            # Create SQLAlchemy engine
+            engine_db2 = create_engine(db2strcon)
+            conn_db2 = engine_db2.connect().execution_options(stream_results=True)
 
         pgstrcon = common.get_pg_connection('')
         # Create SQLAlchemy engine

@@ -7,15 +7,19 @@ from airflow.providers.http.operators.http import SimpleHttpOperator
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from function import get_yesterday
+
+default_args = {'start_date': pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
+                'retries': 1,
+                'retry_delay': timedelta(minutes=5),
+                'email': ['dacho-c@bangkokkomatsusales.com'],
+                'email_on_failure': True}
 with DAG(
     dag_id='Auto_Mail_Daily_Service_call_dag',
     tags=['Auto_Send_Mail'],
     schedule_interval='1 7 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
-    start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
-    catchup=False,
-    retries='1',
-    retry_delay=timedelta(minutes=5)
+    default_args=default_args,
+    catchup=False
 ) as dag:
 
     # 1. Check if the API is up

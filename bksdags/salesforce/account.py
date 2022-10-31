@@ -139,7 +139,9 @@ with DAG(
     schedule_interval='3 6-18/4 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
-    catchup=False
+    catchup=False,
+    retries=1,
+    retry_delay=timedelta(minutes=10)
 ) as dag:
 
     # 1. Check if the API is up

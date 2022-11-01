@@ -166,7 +166,7 @@ with DAG(
         http_conn_id='bks_api',
         method='GET',
         endpoint='etl/sf/sfopportunity',
-        data={"stdate": '2022-06-01', "edate": '2022-11-30'},
+        data={"stdate": '2022-06-01', "edate": '2022-07-31'},
         log_response=True
     )
 

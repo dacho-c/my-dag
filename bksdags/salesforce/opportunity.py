@@ -22,7 +22,7 @@ import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 #from function import get_yesterday
 from Class import common
-from function import get_firstdate_last_m, get_today
+from function import get_firstdate_this_m, get_today
 
 def upsert(session, table, update_cols, rows):
 
@@ -159,14 +159,14 @@ with DAG(
         retries=3,
         mode="reschedule",
     )
-    #data={"stdate": get_firstdate_last_m(), "edate": get_today()},
+    #data={"stdate": get_firstdate_this_m(), "edate": get_today()},
     # 2. Call API Salesforce Load to Datalaken Temp Table
     task_Get_Salesforce_Data_Save_To_Datalake = SimpleHttpOperator(
         task_id='get_salesforce_opportunity_object',
         http_conn_id='bks_api',
         method='GET',
         endpoint='etl/sf/sfopportunity',
-        data={"stdate": '2022-06-01', "edate": '2022-06-30'},
+        data={"stdate": get_firstdate_this_m(), "edate": get_today()},
         log_response=True
     )
 

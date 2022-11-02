@@ -128,18 +128,24 @@ def Check_exiting(**kwargs):
         return False   
 
 def branch_func(ti):
-    xcom_value = bool(ti.xcom_pull(task_ids="check_exit_sf_order_data", key='return_value'))
+    xcom_value = bool(ti.xcom_pull(task_ids="check_exit_sf_visit_plan_data", key='return_value'))
     if xcom_value:
-        return "upsert_sf_order_on_data_lake"
+        return "upsert_sf_visit_plan_on_data_lake"
     else:
-        return "create_new_sf_order_table"
+        return "create_new_sf_visit_plan_table"
+
+default_args = {'start_date': pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
+                'retries': 1,
+                'retry_delay': timedelta(minutes=10),
+                'email': ['dacho-c@bangkokkomatsusales.com'],
+                'email_on_failure': True}
 
 with DAG(
-    dag_id='Salesforce_Order_ETL_dag',
+    dag_id='Salesforce_visit_plan_ETL_dag',
     tags=['Salesforce'],
-    schedule_interval='12 6-18/4 * * *',
+    schedule_interval='21 6-18/4 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
-    start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
+    default_args=default_args,
     catchup=False
 ) as dag:
 
@@ -153,51 +159,51 @@ with DAG(
         retries=3,
         mode="reschedule",
     )
-
+    #data={"stdate": get_firstdate_this_m(), "edate": get_today()},
     # 2. Call API Salesforce Load to Datalaken Temp Table
     task_Get_Salesforce_Data_Save_To_Datalake = SimpleHttpOperator(
-        task_id='get_salesforce_order_object',
+        task_id='get_salesforce_visit_plan_object',
         http_conn_id='bks_api',
         method='GET',
-        endpoint='etl/sf/sforder',
+        endpoint='etl/sf/sfvisit',
         data={"stdate": get_firstdate_this_m(), "edate": get_today()},
         log_response=True
     )
 
     # 3. Upsert Salesforce To DATA Lake
-    task_L_DL_SF_order = PythonOperator(
-        task_id='upsert_sf_order_on_data_lake',
+    task_L_DL_SF_visit_plan = PythonOperator(
+        task_id='upsert_sf_visit_plan_on_data_lake',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "sf_order", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_visit_plan", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     # 4. Replace Salesforce Temp Table
-    task_RP_DL_SF_order = PythonOperator(
-        task_id='create_new_sf_order_table',
+    task_RP_DL_SF_visit_plan = PythonOperator(
+        task_id='create_new_sf_visit_plan_table',
         provide_context=True,
         python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "sf_order", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_visit_plan", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     # 5. Cleansing Salesforce Table
-    task_CL_DL_SF_order = PythonOperator(
-        task_id='cleansing_sf_order_data',
+    task_CL_DL_SF_visit_plan = PythonOperator(
+        task_id='cleansing_sf_visit_plan_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sf_order", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_visit_plan", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     # 6. Check Exiting Salesforce Table
-    task_CK_DL_SF_order = PythonOperator(
-        task_id='check_exit_sf_order_data',
+    task_CK_DL_SF_visit_plan = PythonOperator(
+        task_id='check_exit_sf_visit_plan_data',
         provide_context=True,
         python_callable= Check_exiting,
-        op_kwargs={'To_Table': "sf_order", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_visit_plan", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
     branch_op = BranchPythonOperator(
-        task_id="check_existing_sf_order_on_data_lake",
+        task_id="check_existing_sf_visit_plan_on_data_lake",
         python_callable=branch_func,
     )
 
@@ -206,4 +212,4 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_order >> branch_op >> [task_L_DL_SF_order, task_RP_DL_SF_order] >> branch_join >> task_CL_DL_SF_order
+    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_visit_plan >> branch_op >> [task_L_DL_SF_visit_plan, task_RP_DL_SF_visit_plan] >> branch_join >> task_CL_DL_SF_visit_plan

@@ -22,6 +22,7 @@ import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 #from function import get_yesterday
 from Class import common
+from function import get_firstdate_this_m, get_today
 
 def upsert(session, table, update_cols, rows):
 
@@ -159,6 +160,7 @@ with DAG(
         http_conn_id='bks_api',
         method='GET',
         endpoint='etl/sf/sfcases',
+        data={"stdate": get_firstdate_this_m(), "edate": get_today()},
         log_response=True
     )
 

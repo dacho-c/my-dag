@@ -161,7 +161,7 @@ def branch_func(ti):
 
 with DAG(
     dag_id='DWH_ETL_customer_rank_dag',
-    schedule_interval='35 7-20/1 * * *',
+    schedule_interval='35 7-20/4 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

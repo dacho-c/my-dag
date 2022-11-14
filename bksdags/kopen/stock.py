@@ -22,7 +22,7 @@ import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
 from sql import sql_stock
-from function import get_last_m_datetime
+from function import get_firstdate_this_m
 
 def ETL_process(**kwargs):
 
@@ -171,7 +171,7 @@ with DAG(
         task_id='etl_kopen_part_stock_data',
         provide_context=True,
         python_callable=ETL_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where db2admin.stock.ST_LASTTIME >= '2022-11-01 00:00:00'"}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where db2admin.stock.ST_LASTTIME >= '%s 00:00:00'" % (get_firstdate_this_m())}
     )
 
     # 2. Upsert Part Stock To DATA Warehouse
@@ -195,7 +195,7 @@ with DAG(
         task_id='cleansing_part_stock_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where st_lasttime >= '2022-11-01 00:00:00'"}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where st_lasttime >= '%s 00:00:00'" % (get_firstdate_this_m())}
     )
 
     branch_op = BranchPythonOperator(

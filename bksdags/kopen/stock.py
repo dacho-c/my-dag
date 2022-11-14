@@ -195,7 +195,7 @@ with DAG(
         task_id='cleansing_part_stock_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where st_lasttime >= '%s 00:00:00'" % (get_firstdate_this_m())}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " and st_lasttime >= '%s 00:00:00'" % (get_firstdate_this_m())}
     )
 
     branch_op = BranchPythonOperator(

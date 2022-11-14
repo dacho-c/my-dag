@@ -46,7 +46,7 @@ def ETL_process(**kwargs):
     if result.loc[0,'exists']:
         ETL_Status = True
     
-    sqlstr_main = sql_stock() + tb_from + C_condition
+    sqlstr_main = sql_stock() + C_condition
 
     for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_db2, chunksize=c_size):
         rows += len(df_main)

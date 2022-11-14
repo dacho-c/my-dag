@@ -167,14 +167,6 @@ with DAG(
 ) as dag:
 
     # 1. Get the Part Stock from a table in Kopen DB2
-    task_EL_Kopen_Part_Stock_data = PythonOperator(
-        task_id='el_kopen_part_stock_data',
-        provide_context=True,
-        python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000}
-    )
-
-    # 1. Get the Part Stock from a table in Kopen DB2
     task_ETL_Kopen_part_stock_data = PythonOperator(
         task_id='etl_kopen_part_stock_data',
         provide_context=True,

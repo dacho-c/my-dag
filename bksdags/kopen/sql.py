@@ -39,7 +39,10 @@ def sql_detail_delete(tb, lym):
         return ""
 
 def sql_stock():
-    return """select (A.ST_ORG_ID || A.ST_WH_ID || ST_PRO_KOMCODE) as item_id, A.ST_ORG_ID, A.ST_WH_ID, A.ST_SR_ID, A.ST_LO_ID, A.ST_PRO_ID, A.ST_PRO_KOMCODE, A.ST_DEP_ID, A.ST_HOLD_PUR, A.ST_HOLD_CUS, A.ST_HOLD_REP, A.ST_OUT_CUS, A.ST_OUT_REP, 
-A.ST_ENABLE_STOCK, A.ST_BALANCE_STOCK, A.ST_RETURN_STOCK, A.ST_IN_TOTAL, A.ST_OUT_TOTAL, A.ST_COST_NOTAX_PRICE, A.ST_LASTUSERID, A.ST_LASTTIME, A.ST_STATUS, A.ST_LASTINTIME, 
-A.ST_LASTOUTTIME, A.ST_HOLD_TRANS, A.ST_OUT_TRANS, A.ST_IN_DATE, A.ST_SALE_DATE, A.ST_PICKED_QTY, A.ST_STARTDATE, A.ST_ENDDATE, A.ST_ADJUSTMENT_DATE, A.ST_SR_QTY, A.ST_HOLD_PUR_PO, A.ST_HOLD_REP_PO 
-from db2admin.stock as A """
+    return """select (db2admin.stock.ST_ORG_ID || db2admin.stock.ST_WH_ID || db2admin.stock.ST_PRO_KOMCODE) as item_id, db2admin.stock.ST_ORG_ID, db2admin.stock.ST_WH_ID, 
+    db2admin.stock.ST_SR_ID, db2admin.stock.ST_LO_ID, db2admin.stock.ST_PRO_ID, db2admin.stock.ST_PRO_KOMCODE, db2admin.stock.ST_DEP_ID, db2admin.stock.ST_HOLD_PUR, 
+    db2admin.stock.ST_HOLD_CUS, db2admin.stock.ST_HOLD_REP, db2admin.stock.ST_OUT_CUS, db2admin.stock.ST_OUT_REP, db2admin.stock.ST_ENABLE_STOCK, db2admin.stock.ST_BALANCE_STOCK, 
+    db2admin.stock.ST_RETURN_STOCK, db2admin.stock.ST_IN_TOTAL, db2admin.stock.ST_OUT_TOTAL, db2admin.stock.ST_COST_NOTAX_PRICE, db2admin.stock.ST_LASTUSERID, db2admin.stock.ST_LASTTIME, 
+    db2admin.stock.ST_STATUS, db2admin.stock.ST_LASTINTIME, db2admin.stock.ST_LASTOUTTIME, db2admin.stock.ST_HOLD_TRANS, db2admin.stock.ST_OUT_TRANS, db2admin.stock.ST_IN_DATE, 
+    db2admin.stock.ST_SALE_DATE, db2admin.stock.ST_PICKED_QTY, db2admin.stock.ST_STARTDATE, db2admin.stock.ST_ENDDATE, db2admin.stock.ST_ADJUSTMENT_DATE, db2admin.stock.ST_SR_QTY, 
+    db2admin.stock.ST_HOLD_PUR_PO, db2admin.stock.ST_HOLD_REP_PO from db2admin.stock """

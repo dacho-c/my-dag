@@ -171,7 +171,7 @@ with DAG(
         task_id='etl_kopen_part_stock_data',
         provide_context=True,
         python_callable=ETL_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': ""}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where db2admin.stock.ST_LASTTIME >= '2022-11-01 00:00:00'"}
     )
 
     # 2. Upsert Part Stock To DATA Warehouse
@@ -179,7 +179,7 @@ with DAG(
         task_id='upsert_part_stock_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': ""}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id'}
     )
 
     # 3. Replace Part Stock Temp Table
@@ -187,7 +187,7 @@ with DAG(
         task_id='create_new_part_stock_table',
         provide_context=True,
         python_callable= INSERT_bluk,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': ""}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id'}
     )
 
     # 4. Cleansing Part Stock Table
@@ -195,7 +195,7 @@ with DAG(
         task_id='cleansing_part_stock_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': ""}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where st_lasttime >= '2022-11-01 00:00:00'"}
     )
 
     branch_op = BranchPythonOperator(

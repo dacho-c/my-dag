@@ -44,5 +44,5 @@ def sql_stock():
     db2admin.stock.ST_HOLD_CUS, db2admin.stock.ST_HOLD_REP, db2admin.stock.ST_OUT_CUS, db2admin.stock.ST_OUT_REP, db2admin.stock.ST_ENABLE_STOCK, db2admin.stock.ST_BALANCE_STOCK, 
     db2admin.stock.ST_RETURN_STOCK, db2admin.stock.ST_IN_TOTAL, db2admin.stock.ST_OUT_TOTAL, db2admin.stock.ST_COST_NOTAX_PRICE, db2admin.stock.ST_LASTUSERID, db2admin.stock.ST_LASTTIME, 
     db2admin.stock.ST_STATUS, db2admin.stock.ST_LASTINTIME, db2admin.stock.ST_LASTOUTTIME, db2admin.stock.ST_HOLD_TRANS, db2admin.stock.ST_OUT_TRANS, db2admin.stock.ST_IN_DATE, 
-    db2admin.stock.ST_SALE_DATE, db2admin.stock.ST_PICKED_QTY, db2admin.stock.ST_STARTDATE, db2admin.stock.ST_ENDDATE, db2admin.stock.ST_ADJUSTMENT_DATE, db2admin.stock.ST_SR_QTY, 
+    db2admin.stock.ST_SALE_DATE, db2admin.stock.ST_PICKED_QTY, DATE(db2admin.stock.ST_STARTDATE) as ST_STARTDATE, DATE(db2admin.stock.ST_ENDDATE) as ST_ENDDATE, DATE(db2admin.stock.ST_ADJUSTMENT_DATE) as ST_ADJUSTMENT_DATE, db2admin.stock.ST_SR_QTY, 
     db2admin.stock.ST_HOLD_PUR_PO, db2admin.stock.ST_HOLD_REP_PO from db2admin.stock """

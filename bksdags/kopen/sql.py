@@ -39,7 +39,7 @@ def sql_detail_delete(tb, lym):
         return ""
 
 def sql_stock():
-    return """select (db2admin.stock.ST_ORG_ID || db2admin.stock.ST_WH_ID || db2admin.stock.ST_PRO_KOMCODE) as item_id, db2admin.stock.ST_ORG_ID, db2admin.stock.ST_WH_ID, 
+    return """select (db2admin.stock.ST_ORG_ID || db2admin.stock.ST_WH_ID || db2admin.stock.ST_SR_ID || db2admin.stock.ST_LO_ID || db2admin.stock.ST_PRO_KOMCODE) as item_id, db2admin.stock.ST_ORG_ID, db2admin.stock.ST_WH_ID, 
     db2admin.stock.ST_SR_ID, db2admin.stock.ST_LO_ID, db2admin.stock.ST_PRO_ID, db2admin.stock.ST_PRO_KOMCODE, db2admin.stock.ST_DEP_ID, db2admin.stock.ST_HOLD_PUR, 
     db2admin.stock.ST_HOLD_CUS, db2admin.stock.ST_HOLD_REP, db2admin.stock.ST_OUT_CUS, db2admin.stock.ST_OUT_REP, db2admin.stock.ST_ENABLE_STOCK, db2admin.stock.ST_BALANCE_STOCK, 
     db2admin.stock.ST_RETURN_STOCK, db2admin.stock.ST_IN_TOTAL, db2admin.stock.ST_OUT_TOTAL, db2admin.stock.ST_COST_NOTAX_PRICE, db2admin.stock.ST_LASTUSERID, db2admin.stock.ST_LASTTIME, 

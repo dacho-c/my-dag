@@ -60,7 +60,15 @@ def ETL_process(**kwargs):
             n = n + 1
         print(f"Save to data W/H {rows} rows")
     print("ETL Process finished")
-
+    ########################################################################
+    strexec_tmp = ("ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS pro_rank_utime, DROP COLUMN IF EXISTS pro_first_purdate;" % (tb_to + '_tmp'))
+    strexec = ("ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS pro_rank_utime, DROP COLUMN IF EXISTS pro_first_purdate;" % (tb_to))
+    # execute
+    with engine_dl.connect() as conn:
+        conn.execute(strexec_tmp)
+        conn.execute(strexec)
+        conn.close()
+    ########################################################################
     return ETL_Status
 
 def upsert(session, table, update_cols, rows):

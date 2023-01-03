@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pendulum
 from airflow.models import DAG
 from airflow.operators.dummy import DummyOperator 
@@ -160,10 +160,26 @@ def branch_func(ti):
     else:
         return "create_new_part_stock_table"
 
+args = {
+        'owner': 'airflow',    
+        #'start_date': airflow.utils.dates.days_ago(2),
+        # 'end_date': datetime(),
+        # 'depends_on_past': False,
+        #'email': ['airflow@example.com'],
+        #'email_on_failure': False,
+        #'email_on_retry': False,
+        # If a task fails, retry it once after waiting
+        # at least 5 minutes
+        #'retries': 1,
+        'retry_delay': timedelta(minutes=5),
+    }
+
 with DAG(
     dag_id='Kopen_Stock_db2postgres_dag',
+    default_args=args,
     schedule_interval='30 7-20/1 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
+    dagrun_timeout=timedelta(minutes=60),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
@@ -181,7 +197,7 @@ with DAG(
         task_id='upsert_part_stock_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 20000, 'Key': 'item_id'}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id'}
     )
 
     # 3. Replace Part Stock Temp Table

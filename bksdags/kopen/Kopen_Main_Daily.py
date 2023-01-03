@@ -310,7 +310,7 @@ with DAG(
         task_id='upsert_part_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode'}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode'}
     )
 
     # 3. Replace Part Data Temp Table

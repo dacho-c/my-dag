@@ -81,36 +81,38 @@ def UPSERT_process(**kwargs):
     dlstrcon = common.get_pg_connection('')
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
-    # Start Session
-    Base = declarative_base()
-    session = sessionmaker(bind=engine)
-    session = session()
-    Base.metadata.create_all(engine)
 
     n = 0
     rows = 0
     tb_to = kwargs['To_Table']
+    c_size = kwargs['Chunk_Size']
     schema = 'public'
     no_update_cols = []
 
     print('Initial state:\n')
-    df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine)
-    rows = len(df_main)
-    if (rows > 0):
-        metadata = MetaData(schema=schema)
-        metadata.bind = engine
-        table = Table(tb_to, metadata, schema=schema, autoload=True)
-        update_cols = [c.name for c in table.c
-            if c not in list(table.primary_key.columns)
-            and c.name not in no_update_cols]
+    for df_main in pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine, chunksize=c_size):
+        rows = len(df_main)
+        if (rows > 0):
+            # Start Session ########################
+            Base = declarative_base()
+            session = sessionmaker(bind=engine)
+            session = session()
+            Base.metadata.create_all(engine)
+            ########################################
+            metadata = MetaData(schema=schema)
+            metadata.bind = engine
+            table = Table(tb_to, metadata, schema=schema, autoload=True)
+            update_cols = [c.name for c in table.c
+                if c not in list(table.primary_key.columns)
+                and c.name not in no_update_cols]
 
-        for index, row in df_main.iterrows():
-            print(f"Upsert progress {index + 1}/{rows}")
-            upsert(session,table,update_cols,row)
+            for index, row in df_main.iterrows():
+                print(f"Upsert progress {index + 1}/{rows}")
+                upsert(session,table,update_cols,row)
     
-    print(f"Upsert Completed {rows} records.\n")
-    session.commit()
-    session.close()
+            print(f"Upsert Completed {rows} records.\n")
+            session.commit()
+            session.close()
     print('Upsert session commit')
 
 def INSERT_bluk(**kwargs):
@@ -179,7 +181,7 @@ with DAG(
         task_id='upsert_part_stock_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id'}
+        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 20000, 'Key': 'item_id'}
     )
 
     # 3. Replace Part Stock Temp Table

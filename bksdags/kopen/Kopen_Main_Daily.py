@@ -31,7 +31,8 @@ args = {
 with DAG(
     dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
     default_args=args,
-    schedule_interval='5 5 * * *',
+    schedule_interval=None,
+    #schedule_interval='5 5 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     dagrun_timeout=timedelta(minutes=20),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
@@ -142,12 +143,12 @@ with DAG(
         op_kwargs={'From_Table': "SERV_BUSINESS_CODE", 'To_Table': "kp_service_code", 'Chunk_Size': 50000}
     )
 
-    t1 = PythonOperator(task_id="delay_python_task",
-        python_callable=lambda: time.sleep(60)
-    )
+    #t1 = PythonOperator(task_id="delay_python_task",
+        #python_callable=lambda: time.sleep(60)
+    #)
 
     task_EL_Kopen_Revenue_Type_data >> task_EL_Kopen_Part_Monitor_data >> task_EL_Kopen_SOK_Part_data \
     >> task_EL_Kopen_All_Main_Filter_data >> task_EL_Kopen_Part_Demand_data \
     \
     >> task_EL_Kopen_Machine_Model_data >> task_EL_Kopen_Branch_data >> task_EL_Kopen_CustAddress_data >> task_EL_Kopen_Part_Class_data \
-    >> task_EL_Kopen_Department_data >> task_EL_Kopen_Employee_data >> task_EL_Kopen_IDbooks_data >> task_EL_Kopen_Service_code_data >> t1
+    >> task_EL_Kopen_Department_data >> task_EL_Kopen_Employee_data >> task_EL_Kopen_IDbooks_data >> task_EL_Kopen_Service_code_data

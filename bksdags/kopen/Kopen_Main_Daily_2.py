@@ -198,6 +198,7 @@ with DAG(
     wait_for_main_finished = TriggerDagRunOperator(
         task_id='wait_for_main',
         trigger_dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
+        reset_dag_run=True,
         wait_for_completion=True,
         poke_interval=30,
     )

@@ -190,7 +190,7 @@ with DAG(
     schedule_interval='5 5 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     dagrun_timeout=timedelta(minutes=120),
-    #start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
+    start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
     ################### Wait Triger ##########################################################################################################################
@@ -199,8 +199,7 @@ with DAG(
         task_id='wait_for_main',
         external_dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
         external_task_id='task_EL_Kopen_Service_code_data',
-        start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
-        execution_delta=timedelta(hours=1),
+        execution_delta=timedelta(minutes=10),
         timeout=3600,
     )
     ################### PART ##########################################################################################################################

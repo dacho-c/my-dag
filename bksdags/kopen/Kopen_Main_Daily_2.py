@@ -3,7 +3,7 @@ import pendulum
 from airflow.models import DAG
 from airflow.operators.dummy import DummyOperator 
 from airflow.operators.python import PythonOperator, BranchPythonOperator
-from airflow.sensors.external_task_sensor import ExternalTaskSensor
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.edgemodifier import Label
@@ -195,12 +195,10 @@ with DAG(
 ) as dag:
     ################### Wait Triger ##########################################################################################################################
     # 0. Wait From Last DAG
-    wait_for_main_finished = ExternalTaskSensor(
+    wait_for_main_finished = TriggerDagRunOperator(
         task_id='wait_for_main',
-        external_dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
-        external_task_id='el_kopen_service_code_data',
-        execution_delta=timedelta(minutes=5),
-        timeout=300,
+        trigger_dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
+        wait_for_completion=True,
         poke_interval=30,
     )
     ################### PART ##########################################################################################################################

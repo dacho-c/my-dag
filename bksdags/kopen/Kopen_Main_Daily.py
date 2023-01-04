@@ -9,7 +9,7 @@ from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.utils.dates import days_ago
 
-
+import time
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
@@ -142,8 +142,8 @@ with DAG(
         op_kwargs={'From_Table': "SERV_BUSINESS_CODE", 'To_Table': "kp_service_code", 'Chunk_Size': 50000}
     )
 
-    t1 = DummyOperator(
-        task_id='some_arbitary_task',
+    t1 = PythonOperator(task_id="delay_python_task",
+        python_callable=lambda: time.sleep(60)
     )
 
     task_EL_Kopen_Revenue_Type_data >> task_EL_Kopen_Part_Monitor_data >> task_EL_Kopen_SOK_Part_data \

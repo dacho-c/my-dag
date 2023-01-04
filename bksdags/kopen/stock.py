@@ -107,7 +107,7 @@ def UPSERT_process(**kwargs):
                 and c.name not in no_update_cols]
 
             for index, row in df_main.iterrows():
-                print(f"Upsert progress {index + 1}/{rows}")
+                #print(f"Upsert progress {index + 1}/{rows}")
                 upsert(session,table,update_cols,row)
     
             print(f"Upsert Completed {rows} records.\n")

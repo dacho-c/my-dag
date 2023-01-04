@@ -115,7 +115,7 @@ def UPSERT_process(**kwargs):
                 and c.name not in no_update_cols]
 
             for index, row in df_main.iterrows():
-                print(f"Upsert progress {index + 1}/{rows}")
+                #print(f"Upsert progress {index + 1}/{rows}")
                 upsert(session,table,update_cols,row)
     
             print(f"Upsert Completed {rows} records.\n")
@@ -188,7 +188,7 @@ with DAG(
     default_args=args,
     schedule_interval='5 5 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
-    dagrun_timeout=timedelta(minutes=60),
+    dagrun_timeout=timedelta(minutes=120),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:

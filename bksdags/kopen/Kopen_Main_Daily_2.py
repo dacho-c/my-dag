@@ -3,7 +3,7 @@ import pendulum
 from airflow.models import DAG
 from airflow.operators.dummy import DummyOperator 
 from airflow.operators.python import PythonOperator, BranchPythonOperator
-from airflow.operators.sensors import ExternalTaskSensor
+from airflow.sensors.external_task_sensor import ExternalTaskSensor
 from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.edgemodifier import Label

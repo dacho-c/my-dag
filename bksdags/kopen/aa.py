@@ -36,7 +36,7 @@ with DAG(
 
     trigger_dependent_dag = TriggerDagRunOperator(
         task_id="trigger_dependent_dag",
-        trigger_dag_id="dependent-dag",
+        trigger_dag_id="0505_Kopen_Main_Daily_db2postgres_dag",
         wait_for_completion=True
     )
 

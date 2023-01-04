@@ -29,7 +29,7 @@ args = {
     }
 
 with DAG(
-    dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
+    '0505_Kopen_Main_Daily_db2postgres_dag',
     default_args=args,
     #schedule_interval=None,
     schedule_interval='5 5 * * *',

@@ -20,10 +20,10 @@ default_args = {
 }
 
 with DAG(
-    'trigger-dagrun-dag',
+    '0500-daily-trigger-dagrun-dag',
     start_date=datetime(2021, 1, 1),
     max_active_runs=1,
-    schedule_interval='@daily',
+    schedule_interval='0 5 * * *',
     default_args=default_args,
     catchup=False
 ) as dag:
@@ -34,9 +34,15 @@ with DAG(
         op_kwargs={'task_type': 'starting'}
     )
 
-    trigger_dependent_dag = TriggerDagRunOperator(
-        task_id="trigger_dependent_dag",
-        trigger_dag_id="0505_Kopen_Main_Daily_db2postgres_dag",
+    trigger_master_dag = TriggerDagRunOperator(
+        task_id="trigger_master_dag",
+        trigger_dag_id="Kopen_Main_Daily_db2postgres_dag",
+        wait_for_completion=True
+    )
+
+    trigger_part_dag = TriggerDagRunOperator(
+        task_id="trigger_part_dag",
+        trigger_dag_id="Kopen_Part_Daily_db2postgres_dag",
         wait_for_completion=True
     )
 
@@ -46,4 +52,4 @@ with DAG(
         op_kwargs={'task_type': 'ending'}
     )
 
-    start_task >> trigger_dependent_dag >> end_task
+    start_task >> trigger_master_dag >> trigger_part_dag >> end_task

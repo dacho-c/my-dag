@@ -186,25 +186,15 @@ args = {
     }
 
 with DAG(
-    dag_id='0505_2_Kopen_Main_Daily_db2postgres_dag',
+    dag_id='Kopen_Part_Daily_db2postgres_dag',
     default_args=args,
-    schedule_interval='5 5 * * *',
+    schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
     dagrun_timeout=timedelta(minutes=120),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
-    ################### Wait Triger ##########################################################################################################################
-    # 0. Wait From Last DAG
-    wait_for_main_finished = ExternalTaskSensor(
-        task_id='wait_for_main',
-        external_dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
-        external_task_id='el_kopen_service_code_data',
-        #trigger_dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
-        #reset_dag_run=True,
-        #wait_for_completion=True,
-        poke_interval=30,
-    )
+    
     ################### PART ##########################################################################################################################
     # 1. Get the Part Data from a table in Kopen DB2
     task_ETL_Kopen_Part_data = PythonOperator(
@@ -248,4 +238,4 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    wait_for_main_finished >> task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [task_L_WH_Part,task_RP_WH_Part] >> branch_join >> task_CL_WH_Part
+    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [task_L_WH_Part,task_RP_WH_Part] >> branch_join >> task_CL_WH_Part

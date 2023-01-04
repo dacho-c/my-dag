@@ -31,8 +31,8 @@ args = {
 with DAG(
     dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
     default_args=args,
-    schedule_interval=None,
-    #schedule_interval='5 5 * * *',
+    #schedule_interval=None,
+    schedule_interval='5 5 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
     dagrun_timeout=timedelta(minutes=20),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),

@@ -186,7 +186,7 @@ args = {
     }
 
 with DAG(
-    dag_id='Kopen_Part_Daily_db2postgres_dag',
+    'Kopen_Part_Daily_db2postgres_dag',
     default_args=args,
     schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),

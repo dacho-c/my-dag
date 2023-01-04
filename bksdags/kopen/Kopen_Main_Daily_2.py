@@ -198,9 +198,9 @@ with DAG(
     wait_for_main_finished = ExternalTaskSensor(
         task_id='wait_for_main',
         external_dag_id='0505_Kopen_Main_Daily_db2postgres_dag',
-        external_task_id='task_EL_Kopen_Service_code_data',
-        execution_delta=timedelta(minutes=10),
-        timeout=3600,
+        external_task_id='el_kopen_service_code_data',
+        execution_delta=timedelta(minutes=3),
+        timeout=300,
     )
     ################### PART ##########################################################################################################################
     # 1. Get the Part Data from a table in Kopen DB2

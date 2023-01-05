@@ -190,7 +190,7 @@ with DAG(
     default_args=args,
     schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
-    dagrun_timeout=timedelta(minutes=120),
+    #dagrun_timeout=timedelta(minutes=120),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:

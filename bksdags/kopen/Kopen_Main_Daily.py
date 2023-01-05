@@ -34,7 +34,7 @@ with DAG(
     schedule_interval=None,
     #schedule_interval='5 5 * * *',
     #start_date=datetime(year=2022, month=6, day=1),
-    dagrun_timeout=timedelta(minutes=20),
+    #dagrun_timeout=timedelta(minutes=20),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:

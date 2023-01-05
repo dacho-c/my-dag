@@ -135,9 +135,9 @@ def branch_func(ti):
         return "create_new_sf_quote_table"
 
 with DAG(
-    dag_id='Salesforce_Quote_ETL_dag',
+    'Salesforce_Quote_ETL_dag',
     tags=['Salesforce'],
-    schedule_interval='15 6-18/4 * * *',
+    schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

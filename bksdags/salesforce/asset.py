@@ -134,9 +134,9 @@ def branch_func(ti):
         return "create_new_sf_asset_table"
 
 with DAG(
-    dag_id='Salesforce_Asset_ETL_dag',
+    'Salesforce_Asset_ETL_dag',
     tags=['Salesforce'],
-    schedule_interval='6 6-18/4 * * *',
+    schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

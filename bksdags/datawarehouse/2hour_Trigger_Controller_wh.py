@@ -21,7 +21,7 @@ default_args = {
 }
 
 with DAG(
-    '0730-daily-trigger-dagrun-dag',
+    '0730-2hour-trigger-dagrun-dag',
     #start_date=datetime(2021, 1, 1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     max_active_runs=1,

@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime, timedelta
+import pendulum
 
 def print_task_type(**kwargs):
     """
@@ -21,7 +22,8 @@ default_args = {
 
 with DAG(
     '0500-daily-trigger-dagrun-dag',
-    start_date=datetime(2021, 1, 1),
+    #start_date=datetime(2021, 1, 1),
+    start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     max_active_runs=1,
     schedule_interval='0 5 * * *',
     default_args=default_args,

@@ -11,8 +11,8 @@ from Class import common
 from function import get_last_ym
 
 with DAG(
-    dag_id='Kopen_Part_Picking_db2postgres_dag',
-    schedule_interval='15 7-20/1 * * *',
+    'Kopen_Part_Picking_db2postgres_dag',
+    schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

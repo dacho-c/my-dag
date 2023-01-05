@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import pendulum
 from airflow.models import DAG
 from airflow.operators.dummy import DummyOperator 
@@ -21,8 +21,7 @@ from sqlalchemy.inspection import inspect
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
-from sql import sql_stock
-from function import get_firstdate_this_m
+from function import get_last_m_datetime
 
 def ETL_process(**kwargs):
 
@@ -46,7 +45,7 @@ def ETL_process(**kwargs):
     if result.loc[0,'exists']:
         ETL_Status = True
     
-    sqlstr_main = sql_stock() + C_condition
+    sqlstr_main = "SELECT * FROM db2admin." + tb_from + C_condition
 
     for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_db2, chunksize=c_size):
         rows += len(df_main)
@@ -81,38 +80,36 @@ def UPSERT_process(**kwargs):
     dlstrcon = common.get_pg_connection('')
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+    # Start Session
+    Base = declarative_base()
+    session = sessionmaker(bind=engine)
+    session = session()
+    Base.metadata.create_all(engine)
 
     n = 0
     rows = 0
     tb_to = kwargs['To_Table']
-    c_size = kwargs['Chunk_Size']
     schema = 'public'
     no_update_cols = []
 
     print('Initial state:\n')
-    for df_main in pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine, chunksize=c_size):
-        rows = len(df_main)
-        if (rows > 0):
-            # Start Session ########################
-            Base = declarative_base()
-            session = sessionmaker(bind=engine)
-            session = session()
-            Base.metadata.create_all(engine)
-            ########################################
-            metadata = MetaData(schema=schema)
-            metadata.bind = engine
-            table = Table(tb_to, metadata, schema=schema, autoload=True)
-            update_cols = [c.name for c in table.c
-                if c not in list(table.primary_key.columns)
-                and c.name not in no_update_cols]
+    df_main = pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine)
+    rows = len(df_main)
+    if (rows > 0):
+        metadata = MetaData(schema=schema)
+        metadata.bind = engine
+        table = Table(tb_to, metadata, schema=schema, autoload=True)
+        update_cols = [c.name for c in table.c
+            if c not in list(table.primary_key.columns)
+            and c.name not in no_update_cols]
 
-            for index, row in df_main.iterrows():
-                #print(f"Upsert progress {index + 1}/{rows}")
-                upsert(session,table,update_cols,row)
+        for index, row in df_main.iterrows():
+            print(f"Upsert progress {index + 1}/{rows}")
+            upsert(session,table,update_cols,row)
     
-            print(f"Upsert Completed {rows} records.\n")
-            session.commit()
-            session.close()
+    print(f"Upsert Completed {rows} records.\n")
+    session.commit()
+    session.close()
     print('Upsert session commit')
 
 def INSERT_bluk(**kwargs):
@@ -154,70 +151,54 @@ def Cleansing_process(**kwargs):
             conn.close()
         
 def branch_func(ti):
-    xcom_value = bool(ti.xcom_pull(task_ids="etl_kopen_part_stock_data", key='return_value'))
+    xcom_value = bool(ti.xcom_pull(task_ids="etl_kopen_service_job_data", key='return_value'))
     if xcom_value:
-        return "upsert_part_stock_on_data_warehouse"
+        return "upsert_service_job_on_data_warehouse"
     else:
-        return "create_new_part_stock_table"
-
-args = {
-        'owner': 'airflow',    
-        #'start_date': airflow.utils.dates.days_ago(2),
-        # 'end_date': datetime(),
-        # 'depends_on_past': False,
-        #'email': ['airflow@example.com'],
-        #'email_on_failure': False,
-        #'email_on_retry': False,
-        # If a task fails, retry it once after waiting
-        # at least 5 minutes
-        #'retries': 1,
-        'retry_delay': timedelta(minutes=5),
-    }
+        return "create_new_service_job_table"
 
 with DAG(
-    dag_id='Kopen_Stock_db2postgres_dag',
-    default_args=args,
-    schedule_interval='30 7-20/1 * * *',
+    'Kopen_Service_job_db2postgres_dag',
+    schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
-    dagrun_timeout=timedelta(minutes=60),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
 
-    # 1. Get the Part Stock from a table in Kopen DB2
-    task_ETL_Kopen_part_stock_data = PythonOperator(
-        task_id='etl_kopen_part_stock_data',
+    # 1. Get the Service Job from a table in Kopen DB2
+    task_ETL_Kopen_Service_Job_data = PythonOperator(
+        task_id='etl_kopen_service_job_data',
         provide_context=True,
         python_callable=ETL_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where db2admin.stock.ST_LASTTIME >= '%s 00:00:00'" % (get_firstdate_this_m())}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    # 2. Upsert Part Stock To DATA Warehouse
-    task_L_WH_Service_Job = PythonOperator(
-        task_id='upsert_part_stock_on_data_warehouse',
+    # 2. Upsert Service Job To DATA Warehouse
+    task_L_WH_ServiceJob = PythonOperator(
+        task_id='upsert_service_job_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id'}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    # 3. Replace Part Stock Temp Table
-    task_RP_WH_Service_Job = PythonOperator(
-        task_id='create_new_part_stock_table',
+    # 3. Replace Service Job Temp Table
+    task_RP_WH_ServiceJob = PythonOperator(
+        task_id='create_new_service_job_table',
         provide_context=True,
         python_callable= INSERT_bluk,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id'}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    # 4. Cleansing Part Stock Table
-    task_CL_WH_Service_Job = PythonOperator(
-        task_id='cleansing_part_stock_data',
+    # 4. Cleansing Service Job Table
+    task_CL_WH_ServiceJob = PythonOperator(
+        task_id='cleansing_service_job_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "stock", 'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " and st_lasttime >= '%s 00:00:00'" % (get_firstdate_this_m())}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " and smm_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     branch_op = BranchPythonOperator(
-        task_id="check_existing_part_stock_on_data_warehouse",
+        task_id="check_existing_service_job_on_data_warehouse",
         python_callable=branch_func,
     )
 
@@ -226,4 +207,4 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_ETL_Kopen_part_stock_data >> branch_op >> [task_L_WH_Service_Job,task_RP_WH_Service_Job] >> branch_join >> task_CL_WH_Service_Job
+    task_ETL_Kopen_Service_Job_data >> branch_op >> [task_L_WH_ServiceJob,task_RP_WH_ServiceJob] >> branch_join >> task_CL_WH_ServiceJob

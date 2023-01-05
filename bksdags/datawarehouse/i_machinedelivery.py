@@ -176,8 +176,8 @@ def branch_func(ti):
         return "create_new_machine_delivery_table"
 
 with DAG(
-    dag_id='DWH_ETL_Machine_Delivery_dag',
-    schedule_interval='40 7-20/1 * * *',
+    'DWH_ETL_Machine_Delivery_dag',
+    schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

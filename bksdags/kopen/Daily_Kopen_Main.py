@@ -60,7 +60,7 @@ with DAG(
         task_id='el_kopen_sok_part_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "BKS_SOK_PART", 'To_Table': "kp_bks_sok_part", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "BKS_SOK_PART", 'To_Table': "kp_bks_sok_part", 'Chunk_Size': 20000}
     )
 
     # 4. Get the all main filter data from a table in Kopen DB2
@@ -100,7 +100,7 @@ with DAG(
         task_id='el_kopen_cust_address_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "customer_address", 'To_Table': "kp_customer_address", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "customer_address", 'To_Table': "kp_customer_address", 'Chunk_Size': 20000}
     )
 
     # 4. Get the Part Class data from a table in Kopen DB2

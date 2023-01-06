@@ -62,6 +62,7 @@ def ETL_process(**kwargs):
             df_main.to_sql(tb_to + "_tmp", engine_dl, index=False, if_exists='append')
             n = n + 1
         print(f"Save to data W/H {rows} rows")
+        del df_main
     print("ETL Process finished")
     ########################################################################
     strexec_tmp = ("ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS pro_rank_utime, DROP COLUMN IF EXISTS pro_first_purdate;" % (tb_to + '_tmp'))
@@ -123,6 +124,7 @@ def UPSERT_process(**kwargs):
             print(f"Upsert Completed {rows} records.\n")
             session.commit()
             session.close()
+            del df_main
     print('Upsert session commit')
 
 def INSERT_bluk(**kwargs):

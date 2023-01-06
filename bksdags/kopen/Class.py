@@ -71,6 +71,7 @@ class common(object):
             else:
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Save to data lake {rows} rows")
+            del chunk_df
         print("EL Process finished")
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
@@ -145,6 +146,7 @@ class common(object):
             else:
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
+            del chunk_df
         print("EL Process finished")
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
@@ -189,6 +191,7 @@ class common(object):
             else:
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
+            del chunk_df
         print("EL Process finished")
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True

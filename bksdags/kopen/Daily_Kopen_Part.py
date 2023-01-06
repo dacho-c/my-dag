@@ -22,6 +22,7 @@ from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.inspection import inspect
 import sys, os
+import gc
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
 from function import get_last_m_datetime
@@ -63,6 +64,7 @@ def ETL_process(**kwargs):
             n = n + 1
         print(f"Save to data W/H {rows} rows")
         del df_main
+        gc.collect()
     print("ETL Process finished")
     ########################################################################
     strexec_tmp = ("ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS pro_rank_utime, DROP COLUMN IF EXISTS pro_first_purdate;" % (tb_to + '_tmp'))
@@ -125,6 +127,7 @@ def UPSERT_process(**kwargs):
             session.commit()
             session.close()
             del df_main
+            gc.collect()
     print('Upsert session commit')
 
 def INSERT_bluk(**kwargs):

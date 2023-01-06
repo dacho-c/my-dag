@@ -4,7 +4,7 @@ import configparser
 from sqlalchemy import create_engine, delete
 #import datetime
 from airflow.models import Variable
-
+import gc
 from sql import sql_detail_select, sql_detail_delete
 from function import get_last_ym
 
@@ -72,6 +72,7 @@ class common(object):
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Save to data lake {rows} rows")
             del chunk_df
+            gc.collect()
         print("EL Process finished")
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
@@ -147,6 +148,7 @@ class common(object):
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
             del chunk_df
+            gc.collect()
         print("EL Process finished")
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True
@@ -192,6 +194,7 @@ class common(object):
                 chunk_df.to_sql(tb_to, engine_pg, index=False, if_exists='append')
                 print(f"Already Update to data lake {rows} rows")
             del chunk_df
+            gc.collect()
         print("EL Process finished")
         print(f"Time to process {tb_from} : {time.time() - start_time} Sec.")
         return True

@@ -1,3 +1,4 @@
+from asyncio import Task
 from datetime import datetime, timedelta
 import pendulum
 from airflow.models import DAG
@@ -297,9 +298,8 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    branch_join1 = DummyOperator(
-        task_id='join1',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    task_dummy_part = DummyOperator(
+        task_id='p_dummy'
     )
 
     # 7. Cleansing Part & Append Data Table
@@ -310,6 +310,6 @@ with DAG(
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    newway =  branch_join1 << [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
+    newway = [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
 
-    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [newway,task_RP_WH_Part] >> branch_join >> task_CL_WH_Part
+    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [newway,task_RP_WH_Part] >> task_dummy_part >> branch_join >> task_CL_WH_Part

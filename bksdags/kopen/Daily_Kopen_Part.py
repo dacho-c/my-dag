@@ -305,6 +305,6 @@ with DAG(
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    newway = task_Part_Branch_op_select >> [task_L_WH_Part,task_AP_WH_Part] 
+    newway = task_Part_Branch_op_select >> [task_L_WH_Part,task_AP_WH_Part] >> branch_join
 
     task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [newway,task_RP_WH_Part] >> branch_join >> task_CL_WH_Part

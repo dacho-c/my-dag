@@ -288,6 +288,13 @@ with DAG(
         python_callable= Cleansing_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
+    # 4.1 Cleansing Part Data Table
+    task_CL1_WH_Part = PythonOperator(
+        task_id='cleansing_part_data_1',
+        provide_context=True,
+        python_callable= Cleansing_process,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
+    )
     # 5. Branch Part Data Table
     task_Part_Branch_op = BranchPythonOperator(
         task_id="check_existing_part_on_data_warehouse",
@@ -306,11 +313,6 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    branch_join1 = DummyOperator(
-        task_id='join1',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
-
     # 7. Cleansing Part & Append Data Table
     task_AP_WH_Part = PythonOperator(
         task_id='append_part_on_data_warehouse',
@@ -319,19 +321,7 @@ with DAG(
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    start_task1 = PythonOperator(
-        task_id='starting_task1',
-        python_callable=print_task_type,
-        op_kwargs={'task_type': 'starting'}
-    )
+    way1 = task_CL_WH_Part << branch_join << [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
+    way2 = task_CL1_WH_Part << task_RP_WH_Part
 
-    start_task2 = PythonOperator(
-        task_id='starting_task2',
-        python_callable=print_task_type,
-        op_kwargs={'task_type': 'starting'}
-    )
-
-    way1 = branch_join << [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
-    way2 = start_task2 << start_task1 << task_RP_WH_Part
-
-    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [way1,way2] >> branch_join1 >> task_CL_WH_Part
+    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [way1,way2]

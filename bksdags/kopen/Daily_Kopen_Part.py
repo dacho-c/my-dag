@@ -304,12 +304,6 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    Dummy_task = PythonOperator(
-        task_id='starting_task',
-        python_callable=print_task_type,
-        op_kwargs={'task_type': 'starting'}
-    )
-
     # 7. Cleansing Part & Append Data Table
     task_AP_WH_Part = PythonOperator(
         task_id='append_part_on_data_warehouse',
@@ -318,7 +312,7 @@ with DAG(
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    way1 = [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
-    way2 = task_RP_WH_Part << Dummy_task
+    way1 = task_CL_WH_Part << branch_join << [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
+    way2 = task_CL_WH_Part << task_RP_WH_Part
 
-    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [way1,way2] >> branch_join >> task_CL_WH_Part
+    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [way1,way2]

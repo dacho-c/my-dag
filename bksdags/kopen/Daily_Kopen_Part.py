@@ -168,13 +168,61 @@ def Cleansing_process(**kwargs):
             print("Drop Temp Table.")
             conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to + '_tmp'))
             conn.close()
-        
+
+def Append_process(**kwargs):
+    
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+    c_size = kwargs['Chunk_Size']
+    C_condition = kwargs['Condition']
+
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to + '_tmp')
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        strexec = ("DELETE FROM %s WHERE (EXISTS (SELECT %s FROM %s WHERE %s.%s = %s.%s));") % (tb_to, primary_key, tb_to + '_tmp',tb_to,primary_key,tb_to + '_tmp',primary_key)
+        # execute
+        with engine.connect() as conn:
+            conn.execute(strexec)
+            conn.close()
+        for df_main in pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine, chunksize=c_size):
+            rows = len(df_main)
+            if (rows > 0):
+                print(f"Got dataframe w/{rows} rows")
+                # Load & transfrom
+                ##################
+                df_main.to_sql(tb_to, engine, index=False, if_exists='append')
+                print(f"Save to data W/H {rows} rows")
+            del df_main
+            gc.collect()
+        print("Append Process finished")
+
 def branch_part_func(ti):
     xcom_value = bool(ti.xcom_pull(task_ids="etl_kopen_part_data", key='return_value'))
     if xcom_value:
-        return "upsert_part_on_data_warehouse"
+        return "check_row_part_on_data_warehouse"
     else:
         return "create_new_part_table"
+
+def branch_select_func(**kwargs):
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+
+    # check exiting table
+    ctable = "SELECT COUNT(*) AS CT FROM %s;" % (tb_to + '_tmp')
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    row = result.loc[0,'CT']
+    if row < 300000:
+        return "upsert_part_on_data_warehouse"
+    else:
+        return "append_part_on_data_warehouse"
 
 args = {
         'owner': 'airflow',    
@@ -238,9 +286,25 @@ with DAG(
         python_callable=branch_part_func,
     )
 
+    # 6. Branch Select Way
+    task_Part_Branch_op_select = BranchPythonOperator(
+        task_id="check_row_part_on_data_warehouse",
+        python_callable=branch_select_func,
+    )
+
     branch_join = DummyOperator(
         task_id='join',
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [task_L_WH_Part,task_RP_WH_Part] >> branch_join >> task_CL_WH_Part
+    # 7. Cleansing Part & Append Data Table
+    task_AP_WH_Part = PythonOperator(
+        task_id='append_part_on_data_warehouse',
+        provide_context=True,
+        python_callable= Append_process,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
+    )
+
+    newway = task_Part_Branch_op_select >> [task_L_WH_Part,task_AP_WH_Part] 
+
+    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [newway,task_RP_WH_Part] >> branch_join >> task_CL_WH_Part

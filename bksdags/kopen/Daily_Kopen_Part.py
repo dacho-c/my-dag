@@ -28,6 +28,12 @@ sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
 from function import get_last_m_datetime
 
+def print_task_type(**kwargs):
+    """
+    Example function to call before and after dependent DAG.
+    """
+    print(f"The {kwargs['task_type']} task has completed.")
+
 def ETL_process(**kwargs):
 
     db2strcon = common.get_db2_connection('')
@@ -298,8 +304,10 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_dummy_part = DummyOperator(
-        task_id='p_dummy'
+    Dummy_task = PythonOperator(
+        task_id='starting_task',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 'starting'}
     )
 
     # 7. Cleansing Part & Append Data Table
@@ -312,4 +320,5 @@ with DAG(
 
     newway = [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
 
-    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [newway,task_RP_WH_Part] >> task_dummy_part >> branch_join >> task_CL_WH_Part
+
+    task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [newway,task_RP_WH_Part] >> Dummy_task >> branch_join >> task_CL_WH_Part

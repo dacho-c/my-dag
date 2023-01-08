@@ -297,6 +297,7 @@ with DAG(
     task_Part_Branch_op_select = BranchPythonOperator(
         task_id="check_row_part_on_data_warehouse",
         python_callable=branch_select_func,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     branch_join = DummyOperator(

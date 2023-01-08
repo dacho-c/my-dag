@@ -320,6 +320,6 @@ with DAG(
     )
 
     way1 = branch_join << [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
-    way2 = task_RP_WH_Part
+    way2 = task_RP_WH_Part << task_RP_WH_Part << task_RP_WH_Part
 
     task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [way1,way2] >> branch_join1 >> task_CL_WH_Part

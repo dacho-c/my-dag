@@ -223,9 +223,10 @@ def branch_select_func(**kwargs):
     tb_to = kwargs['To_Table']
 
     # check exiting table
-    ctable = "SELECT COUNT(*) FROM %s;" % (tb_to + '_tmp')
+    ctable = "SELECT COUNT(*) as c FROM %s;" % (tb_to + '_tmp')
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
-    row = result.loc[0,0]
+    print(result)
+    row = result.loc[0,'c']
     if row < 300000:
         return "upsert_part_on_data_warehouse"
     else:

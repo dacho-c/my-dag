@@ -262,7 +262,7 @@ with DAG(
         task_id='etl_kopen_part_data',
         provide_context=True,
         python_callable=ETL_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " where pro_lasttime >= '%s'" % (get_last_m_datetime())}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " where pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     # 2. Upsert Part Data To DATA Warehouse
@@ -270,7 +270,7 @@ with DAG(
         task_id='upsert_part_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode'}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode'}
     )
 
     # 3. Replace Part Data Temp Table
@@ -278,7 +278,7 @@ with DAG(
         task_id='create_new_part_table',
         provide_context=True,
         python_callable= INSERT_bluk,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode'}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode'}
     )
 
     # 4. Cleansing Part Data Table
@@ -286,14 +286,14 @@ with DAG(
         task_id='cleansing_part_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
     # 4.1 Cleansing Part Data Table
     task_CL1_WH_Part = PythonOperator(
         task_id='cleansing_part_data_1',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
     # 5. Branch Part Data Table
     task_Part_Branch_op = BranchPythonOperator(
@@ -305,7 +305,7 @@ with DAG(
     task_Part_Branch_op_select = BranchPythonOperator(
         task_id="check_row_part_on_data_warehouse",
         python_callable=branch_select_func,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     branch_join = DummyOperator(
@@ -318,7 +318,7 @@ with DAG(
         task_id='append_part_on_data_warehouse',
         provide_context=True,
         python_callable= Append_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
     way1 = task_CL_WH_Part << branch_join << [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select

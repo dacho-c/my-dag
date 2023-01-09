@@ -44,7 +44,7 @@ with DAG(
         task_id='el_kopen_revenue_type_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "BKS_REVENUE_TYPE", 'To_Table': "kp_revenue_type", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "BKS_REVENUE_TYPE", 'To_Table': "kp_revenue_type", 'Chunk_Size': 20000}
     )
 
     # 2. Get the part_monitor data from a table in Kopen DB2
@@ -52,7 +52,7 @@ with DAG(
         task_id='el_kopen_part_monitor_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "BKS_PART_MONITOR", 'To_Table': "kp_bks_part_monitor", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "BKS_PART_MONITOR", 'To_Table': "kp_bks_part_monitor", 'Chunk_Size': 20000}
     )
 
     # 3. Get the sok part data from a table in Kopen DB2
@@ -68,7 +68,7 @@ with DAG(
         task_id='el_kopen_all_main_filter_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "bks_all_main_filter", 'To_Table': "kp_bks_all_main_filter", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "bks_all_main_filter", 'To_Table': "kp_bks_all_main_filter", 'Chunk_Size': 20000}
     )
 
     # 4. Get the part demand data from a table in Kopen DB2
@@ -76,7 +76,7 @@ with DAG(
         task_id='el_kopen_part_demand_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "bks_part_demand", 'To_Table': "kp_bks_part_demand", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "bks_part_demand", 'To_Table': "kp_bks_part_demand", 'Chunk_Size': 20000}
     )
     ################### SMALL MASTER ##########################################################################################################################
     # 1. Get the Machine Model data from a table in Kopen DB2
@@ -84,7 +84,7 @@ with DAG(
         task_id='el_kopen_machine_model_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "unit_basic", 'To_Table': "kp_machine_model", 'Chunk_Size': 20000}
     )
     
     # 2. Get the Customer data from a table in Kopen DB2
@@ -92,7 +92,7 @@ with DAG(
         task_id='el_kopen_branch_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "branch", 'To_Table': "kp_branch", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "branch", 'To_Table': "kp_branch", 'Chunk_Size': 20000}
     )
 
     # 3. Get the Customer Address data from a table in Kopen DB2
@@ -108,7 +108,7 @@ with DAG(
         task_id='el_kopen_part_class_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "product_class", 'To_Table': "kp_part_class", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "product_class", 'To_Table': "kp_part_class", 'Chunk_Size': 20000}
     )
 
     # 5. Get the Department data from a table in Kopen DB2
@@ -116,7 +116,7 @@ with DAG(
         task_id='el_kopen_department_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "department", 'To_Table': "kp_department", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "department", 'To_Table': "kp_department", 'Chunk_Size': 20000}
     )
 
     # 6. Get the Employee data from a table in Kopen DB2
@@ -124,7 +124,7 @@ with DAG(
         task_id='el_kopen_employee_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "employee", 'To_Table': "kp_employee", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "employee", 'To_Table': "kp_employee", 'Chunk_Size': 20000}
     )
 
     # 7. Get the ID data from a table in Kopen DB2
@@ -132,7 +132,7 @@ with DAG(
         task_id='el_kopen_idbooks_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "idbooks", 'To_Table': "kp_idbooks", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "idbooks", 'To_Table': "kp_idbooks", 'Chunk_Size': 20000}
     )
 
     # 8. Get the service code data from a table in Kopen DB2
@@ -140,7 +140,7 @@ with DAG(
         task_id='el_kopen_service_code_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
-        op_kwargs={'From_Table': "SERV_BUSINESS_CODE", 'To_Table': "kp_service_code", 'Chunk_Size': 50000}
+        op_kwargs={'From_Table': "SERV_BUSINESS_CODE", 'To_Table': "kp_service_code", 'Chunk_Size': 20000}
     )
 
     #t1 = PythonOperator(task_id="delay_python_task",

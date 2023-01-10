@@ -13,7 +13,17 @@ def sql_detail_select(tb, lym):
         return """SELECT db2admin.PART_QUOTE_DETAIL.* 
             FROM db2admin.PART_QUOTE_DETAIL 
             LEFT JOIN db2admin.PART_QUOTE_HEAD ON db2admin.PART_QUOTE_DETAIL.PQD_TICKET_ID = db2admin.PART_QUOTE_HEAD.PQH_TICKET_ID 
-            WHERE db2admin.PART_QUOTE_HEAD.PQH_ACCOUNT_MONTH >= '%s'""" % (lym)
+            WHERE db2admin.PART_QUOTE_HEAD.PQH_ACCOUNT_MONTH >= '%s'
+            UNION ALL 
+            SELECT db2admin.PART_QUOTE_DETAIL.* 
+            FROM db2admin.PART_QUOTE_DETAIL 
+            LEFT JOIN db2admin.SERVICE_QUOTE_HEAD ON db2admin.PART_QUOTE_DETAIL.PQD_TICKET_ID = db2admin.SERVICE_QUOTE_HEAD.SQH_TICKET_ID 
+            WHERE db2admin.SERVICE_QUOTE_HEAD.SQH_ACCOUNT_MONTH >= '%s'""" % (lym,lym)
+    elif tb == 'SERVICE_QUOTE_DTL':
+        return """SELECT db2admin.SERVICE_QUOTE_DTL.* 
+            FROM db2admin.SERVICE_QUOTE_DTL 
+            LEFT JOIN db2admin.SERVICE_QUOTE_HEAD ON db2admin.SERVICE_QUOTE_DTL.SQD_TICKET_ID = db2admin.SERVICE_QUOTE_HEAD.SQH_TICKET_ID 
+            WHERE db2admin.SERVICE_QUOTE_HEAD.SQH_ACCOUNT_MONTH >= '%s'""" % (lym)
     elif tb == 'SERV_PART_OUT_DTL':
         return """SELECT db2admin.SERV_PART_OUT_DTL.* 
             FROM db2admin.SERV_PART_OUT_DTL 
@@ -31,7 +41,12 @@ def sql_detail_delete(tb, lym):
             WHERE kp_part_picking_detail.POD_TICKET_ID IN (SELECT POH_TICKET_ID FROM kp_part_picking_head WHERE POH_ACCOUNT_MONTH >= '%s');""" % (lym)
     elif tb == 'kp_part_quote_detail':
         return """DELETE FROM kp_part_quote_detail 
-            WHERE kp_part_quote_detail.PQD_TICKET_ID IN (SELECT PQH_TICKET_ID FROM kp_part_quote_head WHERE PQH_ACCOUNT_MONTH >= '%s');""" % (lym)
+            WHERE kp_part_quote_detail.PQD_TICKET_ID IN (SELECT PQH_TICKET_ID FROM kp_part_quote_head WHERE PQH_ACCOUNT_MONTH >= '%s');
+            DELETE FROM kp_part_quote_detail 
+            WHERE kp_part_quote_detail.PQD_TICKET_ID IN (SELECT SQH_TICKET_ID FROM kp_service_quote_head WHERE SQH_ACCOUNT_MONTH >= '%s');""" % (lym,lym)
+    elif tb == 'kp_service_quote_detail':
+        return """DELETE FROM kp_service_quote_detail 
+            WHERE kp_service_quote_detail.SQD_TICKET_ID IN (SELECT SQH_TICKET_ID FROM kp_service_quote_head WHERE SQH_ACCOUNT_MONTH >= '%s');""" % (lym)
     elif tb == 'kp_service_part_supply_detail':
         return """DELETE FROM kp_service_part_supply_detail 
             WHERE kp_service_part_supply_detail.SPOD_TICKET_ID IN (SELECT SPO_TICKET_ID FROM kp_service_part_supply_head WHERE SPO_ACCOUNT_MONTH >= '%s');""" % (lym)

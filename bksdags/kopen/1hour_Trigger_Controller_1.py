@@ -38,7 +38,7 @@ with DAG(
 
     trigger_Part_Quote_dag = TriggerDagRunOperator(
         task_id="trigger_Part_Quote_dag",
-        trigger_dag_id="Kopen_Part_Quote_db2postgres_dag",
+        trigger_dag_id="Kopen_PartAndService_Quote_db2postgres_dag",
         wait_for_completion=True
     )
 

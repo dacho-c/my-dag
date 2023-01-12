@@ -71,12 +71,28 @@ with DAG(
         op_kwargs={'From_Table': "bks_all_main_filter", 'To_Table': "kp_bks_all_main_filter", 'Chunk_Size': 20000}
     )
 
-    # 4. Get the part demand data from a table in Kopen DB2
+    # 5. Get the part demand data from a table in Kopen DB2
     task_EL_Kopen_Part_Demand_data = PythonOperator(
         task_id='el_kopen_part_demand_data',
         provide_context=True,
         python_callable=common.read_load_save_data,
         op_kwargs={'From_Table': "bks_part_demand", 'To_Table': "kp_bks_part_demand", 'Chunk_Size': 20000}
+    )
+
+    # 6. Get the BKS target data from a table in Kopen DB2
+    task_EL_Kopen_BKS_Target_data = PythonOperator(
+        task_id='el_kopen_bks_target_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "bks_target", 'To_Table': "kp_bks_target", 'Chunk_Size': 20000}
+    )
+
+    # 7. Get the mining target data from a table in Kopen DB2
+    task_EL_Kopen_Mining_Target_data = PythonOperator(
+        task_id='el_kopen_mining_target_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "bks_target_mining", 'To_Table': "kp_bks_target_mining", 'Chunk_Size': 20000}
     )
     ################### SMALL MASTER ##########################################################################################################################
     # 1. Get the Machine Model data from a table in Kopen DB2
@@ -143,12 +159,20 @@ with DAG(
         op_kwargs={'From_Table': "SERV_BUSINESS_CODE", 'To_Table': "kp_service_code", 'Chunk_Size': 20000}
     )
 
+    # 9. Get the Warehouse data from a table in Kopen DB2
+    task_EL_Kopen_Warehouse_data = PythonOperator(
+        task_id='el_kopen_warehouse_data',
+        provide_context=True,
+        python_callable=common.read_load_save_data,
+        op_kwargs={'From_Table': "warehouse", 'To_Table': "kp_warehouse", 'Chunk_Size': 20000}
+    )
+
     #t1 = PythonOperator(task_id="delay_python_task",
         #python_callable=lambda: time.sleep(60)
     #)
 
     task_EL_Kopen_Revenue_Type_data >> task_EL_Kopen_Part_Monitor_data >> task_EL_Kopen_SOK_Part_data \
-    >> task_EL_Kopen_All_Main_Filter_data >> task_EL_Kopen_Part_Demand_data \
+    >> task_EL_Kopen_All_Main_Filter_data >> task_EL_Kopen_Part_Demand_data >> task_EL_Kopen_BKS_Target_data >> task_EL_Kopen_Mining_Target_data \
     \
     >> task_EL_Kopen_Machine_Model_data >> task_EL_Kopen_Branch_data >> task_EL_Kopen_CustAddress_data >> task_EL_Kopen_Part_Class_data \
-    >> task_EL_Kopen_Department_data >> task_EL_Kopen_Employee_data >> task_EL_Kopen_IDbooks_data >> task_EL_Kopen_Service_code_data
+    >> task_EL_Kopen_Department_data >> task_EL_Kopen_Employee_data >> task_EL_Kopen_IDbooks_data >> task_EL_Kopen_Service_code_data >> task_EL_Kopen_Warehouse_data

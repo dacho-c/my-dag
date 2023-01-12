@@ -48,10 +48,16 @@ with DAG(
         wait_for_completion=True
     )
 
+    trigger_monthly_stock_dag = TriggerDagRunOperator(
+        task_id="trigger_monthly_stock_dag",
+        trigger_dag_id="Kopen_Monthly_Stock_Daily_db2postgres_dag",
+        wait_for_completion=True
+    )
+
     end_task = PythonOperator(
         task_id='end_task',
         python_callable=print_task_type,
         op_kwargs={'task_type': 'ending'}
     )
 
-    start_task >> trigger_master_dag >> trigger_part_dag >> end_task
+    start_task >> trigger_master_dag >> trigger_part_dag >> trigger_monthly_stock_dag >> end_task

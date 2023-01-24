@@ -146,9 +146,9 @@ with DAG(
     task_is_api_active = HttpSensor(
         task_id='is_api_active',
         http_conn_id='bks_api',
-        endpoint='genreport/',
+        endpoint='etl/sf/',
         execution_timeout=timedelta(seconds=120),
-        timeout=3600,
+        timeout=300,
         retries=3,
         mode="reschedule",
     )
@@ -157,7 +157,7 @@ with DAG(
     task_Get_Salesforce_Data_Save_To_Datalake = SimpleHttpOperator(
         task_id='get_salesforce_user_object',
         http_conn_id='bks_api',
-        method='GET',
+        method='POST',
         endpoint='etl/sf/sfuser',
         log_response=True
     )

@@ -134,18 +134,12 @@ def branch_func(ti):
     else:
         return "create_new_sf_visit_plan_table"
 
-default_args = {'start_date': pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
-                'retries': 1,
-                'retry_delay': timedelta(minutes=10),
-                'email': ['dacho-c@bangkokkomatsusales.com'],
-                'email_on_failure': True}
-
 with DAG(
     dag_id='Salesforce_visit_plan_ETL_dag',
     tags=['Salesforce'],
-    schedule_interval='21 6-18/4 * * *',
+    schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),
-    default_args=default_args,
+    start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
 

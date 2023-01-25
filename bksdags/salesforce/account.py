@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import json
 import pendulum
 from airflow.models import DAG
 from airflow.providers.http.sensors.http import HttpSensor
@@ -159,6 +160,8 @@ with DAG(
         http_conn_id='bks_api',
         method='POST',
         endpoint='etl/sf/sfaccount',
+        data=json.dumps({"q": 0}),
+        headers={"Content-Type": "application/json"},
         log_response=True
     )
 

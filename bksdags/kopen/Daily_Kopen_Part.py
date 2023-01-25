@@ -151,7 +151,7 @@ def INSERT_bluk(**kwargs):
     # execute
     with engine.connect() as conn:
         conn.execute(strexec)
-        print("ETL WH Process finished")
+        print("ETL DL Process finished")
         conn.close()
 
 def Cleansing_process(**kwargs):
@@ -211,7 +211,7 @@ def Append_process(**kwargs):
 def branch_part_func(ti):
     xcom_value = bool(ti.xcom_pull(task_ids="etl_kopen_part_data", key='return_value'))
     if xcom_value:
-        return "check_row_part_on_data_warehouse"
+        return "check_row_part_on_data_lake"
     else:
         return "create_new_part_table"
 
@@ -228,9 +228,9 @@ def branch_select_func(**kwargs):
     print(result)
     row = result.loc[0,'c']
     if row < 300000:
-        return "upsert_part_on_data_warehouse"
+        return "upsert_part_on_data_lake"
     else:
-        return "append_part_on_data_warehouse"
+        return "append_part_on_data_lake"
 
 args = {
         'owner': 'airflow',    
@@ -265,16 +265,16 @@ with DAG(
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " where pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    # 2. Upsert Part Data To DATA Warehouse
-    task_L_WH_Part = PythonOperator(
-        task_id='upsert_part_on_data_warehouse',
+    # 2. Upsert Part Data To DATA lake
+    task_L_DL_Part = PythonOperator(
+        task_id='upsert_part_on_data_lake',
         provide_context=True,
         python_callable= UPSERT_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode'}
     )
 
     # 3. Replace Part Data Temp Table
-    task_RP_WH_Part = PythonOperator(
+    task_RP_DL_Part = PythonOperator(
         task_id='create_new_part_table',
         provide_context=True,
         python_callable= INSERT_bluk,
@@ -282,14 +282,14 @@ with DAG(
     )
 
     # 4. Cleansing Part Data Table
-    task_CL_WH_Part = PythonOperator(
+    task_CL_DL_Part = PythonOperator(
         task_id='cleansing_part_data',
         provide_context=True,
         python_callable= Cleansing_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
     # 4.1 Cleansing Part Data Table
-    task_CL1_WH_Part = PythonOperator(
+    task_CL1_DL_Part = PythonOperator(
         task_id='cleansing_part_data_1',
         provide_context=True,
         python_callable= Cleansing_process,
@@ -297,13 +297,13 @@ with DAG(
     )
     # 5. Branch Part Data Table
     task_Part_Branch_op = BranchPythonOperator(
-        task_id="check_existing_part_on_data_warehouse",
+        task_id="check_existing_part_on_data_lake",
         python_callable=branch_part_func,
     )
 
     # 6. Branch Select Way
     task_Part_Branch_op_select = BranchPythonOperator(
-        task_id="check_row_part_on_data_warehouse",
+        task_id="check_row_part_on_data_lake",
         python_callable=branch_select_func,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
@@ -314,14 +314,14 @@ with DAG(
     )
 
     # 7. Cleansing Part & Append Data Table
-    task_AP_WH_Part = PythonOperator(
-        task_id='append_part_on_data_warehouse',
+    task_AP_DL_Part = PythonOperator(
+        task_id='append_part_on_data_lake',
         provide_context=True,
         python_callable= Append_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 20000, 'Key': 'pro_komcode', 'Condition': " and pro_lasttime >= '%s'" % (get_last_m_datetime())}
     )
 
-    way1 = task_CL_WH_Part << branch_join << [task_L_WH_Part,task_AP_WH_Part] << task_Part_Branch_op_select
-    way2 = task_CL1_WH_Part << task_RP_WH_Part
+    way1 = task_CL_DL_Part << branch_join << [task_L_DL_Part,task_AP_DL_Part] << task_Part_Branch_op_select
+    way2 = task_CL1_DL_Part << task_RP_DL_Part
 
     task_ETL_Kopen_Part_data >> task_Part_Branch_op >> [way1,way2]

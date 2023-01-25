@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import gc
 import json
 import pendulum
 from airflow.models import DAG
@@ -128,13 +129,62 @@ def Check_exiting(**kwargs):
     else:
         return False   
 
+def Append_process(**kwargs):
+    
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+    c_size = kwargs['Chunk_Size']
+    C_condition = kwargs['Condition']
+
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to + '_tmp')
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        strexec = ("DELETE FROM %s WHERE (EXISTS (SELECT %s FROM %s WHERE %s.%s = %s.%s));") % (tb_to, primary_key, tb_to + '_tmp',tb_to,primary_key,tb_to + '_tmp',primary_key)
+        # execute
+        with engine.connect() as conn:
+            conn.execute(strexec)
+            conn.close()
+        for df_main in pd.read_sql_query(sql=sqlalchemy.text("select * from %s_tmp" % (tb_to)), con=engine, chunksize=c_size):
+            rows = len(df_main)
+            if (rows > 0):
+                print(f"Got dataframe w/{rows} rows")
+                # Load & transfrom
+                ##################
+                df_main.to_sql(tb_to, engine, index=False, if_exists='append')
+                print(f"Save to data W/H {rows} rows")
+            del df_main
+            gc.collect()
+        print("Append Process finished")
+        
 def branch_func(ti):
     xcom_value = bool(ti.xcom_pull(task_ids="check_exit_sf_opportunity_data", key='return_value'))
     if xcom_value:
-        return "upsert_sf_opportunity_on_data_lake"
+        return "check_row_oppty_on_data_lake"
     else:
         return "create_new_sf_opportunity_table"
 
+def branch_select_func(**kwargs):
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+
+    tb_to = kwargs['To_Table']
+
+    # check exiting table
+    ctable = "SELECT COUNT(*) as c FROM %s;" % (tb_to + '_tmp')
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    print(result)
+    row = result.loc[0,'c']
+    if row < 300000:
+        return "upsert_sf_opportunity_on_data_lake"
+    else:
+        return "append_oppty_on_data_lake"
+    
 with DAG(
     'Salesforce_opportunity_ETL_dag',
     tags=['Salesforce'],
@@ -190,11 +240,34 @@ with DAG(
         op_kwargs={'To_Table': "sf_opportunity", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
+    # 5.1 Cleansing Salesforce Table
+    task_CL_DL_SF_opportunity_1 = PythonOperator(
+        task_id='cleansing_sf_opportunity_data_1',
+        provide_context=True,
+        python_callable= Cleansing_process,
+        op_kwargs={'To_Table': "sf_opportunity", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+    )
+
     # 6. Check Exiting Salesforce Table
     task_CK_DL_SF_opportunity = PythonOperator(
         task_id='check_exit_sf_opportunity_data',
         provide_context=True,
         python_callable= Check_exiting,
+        op_kwargs={'To_Table': "sf_opportunity", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+    )
+
+    # 7. Cleansing Opportunity & Append Data Table
+    task_AP_DL_SF_opportunity = PythonOperator(
+        task_id='append_oppty_on_data_lake',
+        provide_context=True,
+        python_callable= Append_process,
+        op_kwargs={'To_Table': "sf_opportunity", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+    )
+
+    # 8. Opportunity Select Way
+    task_Oppty_Branch_op_select = BranchPythonOperator(
+        task_id="check_row_oppty_on_data_lake",
+        python_callable=branch_select_func,
         op_kwargs={'To_Table': "sf_opportunity", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
     )
 
@@ -208,4 +281,6 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_opportunity >> branch_op >> [task_L_DL_SF_opportunity, task_RP_DL_SF_opportunity] >> branch_join >> task_CL_DL_SF_opportunity
+    way1 = task_CL_DL_SF_opportunity << branch_join << [task_L_DL_SF_opportunity, task_AP_DL_SF_opportunity] << task_Oppty_Branch_op_select
+    way2 = task_CL_DL_SF_opportunity_1 << task_RP_DL_SF_opportunity
+    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_opportunity >> branch_op >> [way1, way2] 

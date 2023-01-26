@@ -35,6 +35,7 @@ def ETL_process(**kwargs):
     rows = 0
     tb_to = kwargs['To_Table']
     c_size = kwargs['Chunk_Size']
+    condition = kwargs['Condition']
 
     ETL_Status = False
     cstr = ""
@@ -43,7 +44,7 @@ def ETL_process(**kwargs):
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine_wh)
     if result.loc[0,'exists']:
         ETL_Status = True
-        cstr = " where DATE(UR_LASTTIME) >= (current_date - 31) or DATE(CUS_LASTTIME) >= (current_date - 31)"
+        cstr = condition
     
     sqlstr_main = sql_ET_machine_cust(cstr)
     sqlstr_mc = sql_ET_machine()
@@ -188,7 +189,7 @@ with DAG(
         task_id='extract_transform_machine_delivery_from_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'To_Table': "machine_delivery", 'Chunk_Size': 2000}
+        op_kwargs={'To_Table': "machine_delivery", 'Chunk_Size': 2000, 'Condition': ""} #" where DATE(UR_LASTTIME) >= (current_date - 31) or DATE(CUS_LASTTIME) >= (current_date - 31)"
     )
 
     # 2. Upsert Machine Delivery To DATA Warehouse
@@ -212,7 +213,7 @@ with DAG(
         task_id='cleansing_machine_delivery_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "machine_delivery", 'Key': "item_id", 'Condition': ""}
+        op_kwargs={'To_Table': "machine_delivery", 'Key': "item_id", 'Condition': ""} #" and (DATE(UR_LASTTIME) >= (current_date - 31) or DATE(CUS_LASTTIME) >= (current_date - 31))"
     )
 
     branch_op = BranchPythonOperator(

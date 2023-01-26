@@ -37,7 +37,7 @@ def ETL_process(**kwargs):
     rows = 0
     tb_to = kwargs['To_Table']
     c_size = kwargs['Chunk_Size']
-
+    C_condition = kwargs['Condition']
     ETL_Status = False
     # check exiting table
     ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
@@ -45,7 +45,7 @@ def ETL_process(**kwargs):
     if result.loc[0,'exists']:
         ETL_Status = True
     
-    sqlstr_main = sql_ET_salesbyitem(get_last_ym())
+    sqlstr_main = sql_ET_salesbyitem(C_condition)
 
     for df_main in pd.read_sql_query(sql=sqlalchemy.text(sqlstr_main), con=engine_dl, chunksize=c_size):
         rows += len(df_main)
@@ -142,7 +142,7 @@ def Cleansing_process(**kwargs):
     ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to + '_tmp')
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
     if result.loc[0,'exists']:
-        strexec = ("DELETE FROM %s WHERE NOT (EXISTS (SELECT %s FROM %s WHERE %s.%s = %s.%s)) %s;") % (tb_to, primary_key, tb_to + '_tmp',tb_to,primary_key,tb_to + '_tmp',primary_key,C_condition)
+        strexec = ("DELETE FROM %s WHERE NOT (EXISTS (SELECT %s FROM %s WHERE %s.%s = %s.%s)) and pih_account_month >= '%s';") % (tb_to, primary_key, tb_to + '_tmp',tb_to,primary_key,tb_to + '_tmp',primary_key,C_condition)
         # execute
         with engine.connect() as conn:
             conn.execute(strexec)
@@ -170,7 +170,7 @@ with DAG(
         task_id='etl_salesbyitem_from_datalake',
         provide_context=True,
         python_callable=ETL_process,
-        op_kwargs={'To_Table': "sales_by_item", 'Chunk_Size': 50000}
+        op_kwargs={'To_Table': "sales_by_item", 'Chunk_Size': 50000, 'Condition': get_last_ym()}
     )
 
     # 2. Upsert Sales By Item To DATA Warehouse
@@ -194,7 +194,7 @@ with DAG(
         task_id='cleansing_sales_by_item_data',
         provide_context=True,
         python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sales_by_item", 'Key': "item_id", 'Condition': " and pih_account_month >= '%s'" % (get_last_ym())}
+        op_kwargs={'To_Table': "sales_by_item", 'Key': "item_id", 'Condition': get_last_ym()}
     )
 
     branch_op = BranchPythonOperator(

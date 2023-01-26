@@ -27,7 +27,7 @@ join (select ID_CODE, ID_NAME, ID_TAG2 from kp_idbooks ki where ID_ATTRIBUTE = 5
 left outer join (select ID_CODE, ID_NAME from kp_idbooks ki where ID_ATTRIBUTE = 12) T on(T.ID_CODE = C.CUS_TYPE)
 left outer join (select ID_CODE, ID_NAME from kp_idbooks ki where ID_ATTRIBUTE = 10) T1 on(T1.ID_CODE = C.CUS_TRADE)
 left outer join (select A.UR_CUS, sum(A.KOM) as kom, sum(A.NKOM) as nkom, sum(A.MC) as mc from (select km.UR_CUS, case when km.UR_SMR_SOURCE = 'KOMTRAX' then 1 else 0 end kom, 
-case when km.UR_SMR_SOURCE = 'KOMTRAX' then 0 else 1 end nkom, 1 as mc from kp_machine km where km.ur_machine_category = '1') A group by A.UR_CUS) U on(C.CUS_ID = U.UR_CUS)
+case when km.UR_SMR_SOURCE = 'KOMTRAX' then 0 else 1 end nkom, 1 as mc from kp_machine km where km.ur_machine_category = '1' and km.UR_STATUS <> '9') A group by A.UR_CUS) U on(C.CUS_ID = U.UR_CUS)
 -- MC last Delivery
 left outer join (select A.UR_CUS, sum(A.MC15) as mc15, sum(A.MC16) as mc16, sum(A.MC17) as mc17, sum(A.MC18) as mc18, sum(A.MC19) as mc19, sum(A.MC) as mctotal
 from (select A.UR_CUS, 
@@ -37,7 +37,7 @@ case when Y = (case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) <
 case when Y = (case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 2 else EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 1 end) then MC else 0 end mc18,
 case when Y = (case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 1 else EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) end) then MC else 0 end mc19, MC
 from (select A.UR_CUS, case when EXTRACT(MONTH FROM A.UR_DELIVER_DATE) < 4 then EXTRACT(YEAR FROM A.UR_DELIVER_DATE) - 1 else EXTRACT(YEAR FROM A.UR_DELIVER_DATE) end Y, 1 as MC
-from kp_machine A where A.ur_machine_category = '1' and UR_STATUS <> '9' and A.UR_DELIVER_DATE >= ((case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then 
+from kp_machine A where A.ur_machine_category = '1' and A.UR_STATUS <> '9' and A.UR_DELIVER_DATE >= ((case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then 
 EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 5 else EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 4 end)::varchar(255) || '-04-01')::date) A) A group by A.UR_CUS) M on (C.CUS_ID = M.UR_CUS)
 -- End MC
 -- Part Amount

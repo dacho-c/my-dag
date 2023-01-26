@@ -37,7 +37,7 @@ case when Y = (case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) <
 case when Y = (case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 2 else EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 1 end) then MC else 0 end mc18,
 case when Y = (case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 1 else EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) end) then MC else 0 end mc19, MC
 from (select A.UR_CUS, case when EXTRACT(MONTH FROM A.UR_DELIVER_DATE) < 4 then EXTRACT(YEAR FROM A.UR_DELIVER_DATE) - 1 else EXTRACT(YEAR FROM A.UR_DELIVER_DATE) end Y, 1 as MC
-from kp_machine A where A.ur_machine_category = '1' and A.UR_DELIVER_DATE >= ((case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then 
+from kp_machine A where A.ur_machine_category = '1' and UR_STATUS <> '9' and A.UR_DELIVER_DATE >= ((case when EXTRACT(MONTH FROM (current_date - INTERVAL '1 day')) < 4 then 
 EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 5 else EXTRACT(YEAR FROM (current_date - INTERVAL '1 day')) - 4 end)::varchar(255) || '-04-01')::date) A) A group by A.UR_CUS) M on (C.CUS_ID = M.UR_CUS)
 -- End MC
 -- Part Amount

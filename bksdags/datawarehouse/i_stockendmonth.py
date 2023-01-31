@@ -178,7 +178,7 @@ with DAG(
         task_id='upsert_stock_end_month_on_data_warehouse',
         provide_context=True,
         python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "stock_end_month"'Key': "item_id"}
+        op_kwargs={'To_Table': "stock_end_month",'Key': "item_id"}
     )
 
     # 3. Replace Stock End Month Temp Table

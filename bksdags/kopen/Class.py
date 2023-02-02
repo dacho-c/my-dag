@@ -4,6 +4,7 @@ import configparser
 from sqlalchemy import create_engine, delete
 #import datetime
 from airflow.models import Variable
+import minio
 import gc
 from sql import sql_detail_select, sql_detail_delete
 from function import get_last_ym
@@ -33,6 +34,30 @@ class common(object):
         # Connection String to EGKopen db2
         db2strcon = "db2://%s:%s@%s:%s/%s" % (db2uid, db2pwd, db2host, db2port, db2database)
         return db2strcon
+
+    def copy_to_minio(**kwargs):
+        tb_to = kwargs['To_Table']
+        targetfile = tb_to + '.parquet'
+        s3_endpoint = Variable.get('s3_endpoint')
+        s3_access_key = Variable.get('s3_access_key')
+        s3_secret_key = Variable.get('s3_secret_key')
+        # Create the client
+        client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
+        # Put the object into minio
+        client.fput_object("datalake",targetfile,targetfile )
+        return True
+
+    def copy_from_minio(**kwargs):
+        tb_to = kwargs['To_Table']
+        targetfile = tb_to + '.parquet'
+        s3_endpoint = Variable.get('s3_endpoint')
+        s3_access_key = Variable.get('s3_access_key')
+        s3_secret_key = Variable.get('s3_secret_key')
+        # Create the client
+        client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
+        # Put the object into minio
+        client.fget_object("datalake",targetfile,targetfile )
+        return True
 
     def read_load_save_data(**kwargs): 
         try:

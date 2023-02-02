@@ -232,25 +232,10 @@ def branch_select_func(**kwargs):
     else:
         return "append_part_on_data_lake"
 
-args = {
-        'owner': 'airflow',    
-        #'start_date': airflow.utils.dates.days_ago(2),
-        # 'end_date': datetime(),
-        'depends_on_past': False,
-        #'email': ['airflow@example.com'],
-        #'email_on_failure': False,
-        #'email_on_retry': False,
-        # If a task fails, retry it once after waiting
-        # at least 5 minutes
-        #'retries': 1,
-        'retry_delay': timedelta(minutes=5),
-    }
-
 with DAG(
     'Kopen_Part_Daily_db2postgres_dag',
-    default_args=args,
+    owner='airflow',
     schedule_interval=None,
-    #start_date=datetime(year=2022, month=6, day=1),
     #dagrun_timeout=timedelta(minutes=120),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False

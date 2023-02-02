@@ -13,7 +13,7 @@ def print_task_type(**kwargs):
     """
     print(f"The {kwargs['task_type']} task has completed.")
 
-now = datetime.now(timezone.tzname('Asia/Bangkok'))
+now = datetime.now()
 now_fmt = now.strftime('%Y-%m-%d_%H:%M:%S%z')
 # Default settings applied to all tasks
 default_args = {

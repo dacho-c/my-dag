@@ -234,7 +234,6 @@ def branch_select_func(**kwargs):
 
 with DAG(
     'Kopen_Part_Daily_db2postgres_dag',
-    owner='airflow',
     schedule_interval=None,
     #dagrun_timeout=timedelta(minutes=120),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),

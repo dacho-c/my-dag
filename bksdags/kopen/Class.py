@@ -1,11 +1,14 @@
 import time
 import pandas as pd
+import pyarrow.parquet as pq
+#import pyarrow as pa
 import configparser
 from sqlalchemy import create_engine, delete
 #import datetime
 from airflow.models import Variable
 import minio
 import gc
+import os, glob
 from sql import sql_detail_select, sql_detail_delete
 from function import get_last_ym
 
@@ -58,6 +61,34 @@ class common(object):
         # Put the object into minio
         client.fget_object("datalake",targetfile,targetfile )
         return True
+
+    def Del_File(**kwargs):
+        tables = kwargs['To_Table']
+        if os.path.exists(tables + ".parquet"):
+            os.remove(tables + '.parquet')
+        if os.path.exists(tables):
+            filelist = glob.glob(os.path.join(tables, "*"))
+        for f in filelist:
+            os.remove(f)
+
+    def combine_parquet_files(**kwargs):
+        input_folder = kwargs['To_Table']
+        target_path = input_folder + ".parquet"
+        try:
+            files = []
+            for file_name in os.listdir(input_folder):
+                files.append(pq.read_table(os.path.join(input_folder, file_name)))
+            with pq.ParquetWriter(target_path,
+                files[0].schema,
+                version='2.6',
+                compression='gzip',
+                use_dictionary=True,
+                data_page_size=2097152, #2MB
+                write_statistics=True) as writer:
+                for f in files:
+                    writer.write_table(f)
+        except Exception as e:
+            print(e)
 
     def read_load_save_data(**kwargs): 
         try:

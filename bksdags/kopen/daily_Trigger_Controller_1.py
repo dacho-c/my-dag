@@ -56,19 +56,12 @@ with DAG(
     )
     t2.set_upstream(t1)
 
-    t3 = TriggerDagRunOperator(
-        task_id="trigger_part_dag",
-        trigger_dag_id="Kopen_Part_Daily_db2postgres_dag",
-        wait_for_completion=True
-    )
-    t3.set_upstream(t2)
-
     t4 = TriggerDagRunOperator(
         task_id="trigger_monthly_stock_dag",
         trigger_dag_id="Kopen_Monthly_Stock_Daily_db2postgres_dag",
         wait_for_completion=True
     )
-    t4.set_upstream(t3)
+    t4.set_upstream(t2)
 
     t_end = PythonOperator(
         task_id='end_task',
@@ -81,16 +74,16 @@ with DAG(
         trigger_rule=TriggerRule.ALL_SUCCESS,
         task_id="AllTaskSuccess",
         to=["dacho-c@bangkokkomatsusales.com"],
-        subject= now_fmt +" [0530-daily-trigger Task completed successfully]",
+        subject= now_fmt + " [0530-daily-trigger Task completed successfully]",
         html_content='<h3>All 0530-daily-trigger Task completed successfully" </h3>'
     )
-    AllTaskSuccess.set_upstream([t_start,t1,t2,t3,t4,t_end])
+    AllTaskSuccess.set_upstream([t_start,t1,t2,t4,t_end])
     
-    #t1Failed = EmailOperator(
-        #trigger_rule=TriggerRule.ONE_FAILED,
-        #task_id="t1Failed",
-        #to=["test@gmail.com"],
-        #subject="T1 Failed",
-        #html_content='<h3>T1 Failed</h3>'
-    #)
-    #t1Failed.set_upstream([t1])
+    t1Failed = EmailOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t1Failed",
+        to=["dacho-c@bangkokkomatsusales.com"],
+        subject= now_fmt + "Daily Trigger T1 Failed",
+        html_content='<h3>Daily Trigger T1 Failed</h3>'
+    )
+    t1Failed.set_upstream([t1])

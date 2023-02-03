@@ -6,7 +6,7 @@ from airflow.operators.python import PythonOperator
 #from airflow.utils.trigger_rule import TriggerRule
 
 import pandas as pd
-import sys, os, glob
+import sys, os
 import gc
 import pyarrow.parquet as pq
 import pyarrow as pa
@@ -15,32 +15,7 @@ import sqlalchemy
 
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
-from function import get_last_m_datetime
-
-def Del_File(tables):
-    if os.path.exists(tables + ".parquet"):
-        os.remove(tables + '.parquet')
-    if os.path.exists(tables):
-        filelist = glob.glob(os.path.join(tables, "*"))
-        for f in filelist:
-            os.remove(f)
-
-def combine_parquet_files(input_folder, target_path):
-    try:
-        files = []
-        for file_name in os.listdir(input_folder):
-            files.append(pq.read_table(os.path.join(input_folder, file_name)))
-        with pq.ParquetWriter(target_path,
-                files[0].schema,
-                version='2.6',
-                compression='gzip',
-                use_dictionary=True,
-                data_page_size=2097152, #2MB
-                write_statistics=True) as writer:
-            for f in files:
-                writer.write_table(f)
-    except Exception as e:
-        print(e)
+#from function import get_last_m_datetime
 
 def EL_process(**kwargs):
 
@@ -55,7 +30,7 @@ def EL_process(**kwargs):
     c_size = kwargs['Chunk_Size']
     C_condition = kwargs['Condition']
     
-    Del_File(tb_to)
+    common.Del_File(**kwargs)
 
     sqlstr = "SELECT * FROM db2admin." + tb_from + C_condition
 
@@ -71,8 +46,49 @@ def EL_process(**kwargs):
     print("ETL Process finished")
     conn_db2.close()
 
-    combine_parquet_files(tb_to, tb_to + '.parquet')
+    common.combine_parquet_files(**kwargs)
 
+    return True
+
+def ETL_process(**kwargs):
+
+    tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+    #c_size = kwargs['Chunk_Size']
+    #C_condition = kwargs['Condition']
+    # ETL ################################################################
+    common.copy_from_minio(tb_to + '.parquet')
+    df = pd.read_parquet(tb_to + '.parquet')
+    df = df[['pro_komcode',
+        'pro_komcode_o',
+        'pro_classid',
+        'pro_name',
+        'pro_last_saledate',
+        'pro_lastuserid',
+        'pro_lasttime',
+        'pro_status',
+        'pro_model_code',
+        'pro_last_purdate',
+        'pro_cate',
+        'pro_sales_type']]
+    
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+
+    df.to_sql(tb_to, engine_dl, index=False, if_exists='replace')
+
+    print(f"Save to Postgres {df.shape}")
+    del df
+    print("ETL Process finished")
+    ########################################################################
+    # execute
+    with engine_dl.connect() as conn:
+        conn.execute("ALTER TABLE %s ADD PRIMARY KEY (%s);" % (tb_to, primary_key))
+        conn.close()
+    ########################################################################
+    common.Del_File(**kwargs)
+    gc.collect()
     return True
 
 with DAG(
@@ -98,4 +114,20 @@ with DAG(
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
     )
     t2.set_upstream(t1)
+
+    t3 = PythonOperator(
+        task_id='copy_part_from_s3_data_lake',
+        provide_context=True,
+        python_callable= common.copy_from_minio,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+    )
+    t3.set_upstream(t2)
+
+    t4 = PythonOperator(
+        task_id='etl_kopen_part_data_lake',
+        provide_context=True,
+        python_callable= ETL_process,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+    )
+    t4.set_upstream(t4)
     

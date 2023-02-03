@@ -1,3 +1,17 @@
+import os
+import sys
+# import the connect library for psycopg2
+import psycopg2
+# import the error handling libraries for psycopg2
+from psycopg2 import OperationalError, errorcodes, errors
+import psycopg2.extras as extras
+import pandas as pd
+from io import StringIO
+import numpy as np
+from sqlalchemy import create_engine
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 import time
 import pandas as pd
 import pyarrow.parquet as pq
@@ -89,6 +103,58 @@ class common(object):
                     writer.write_table(f)
         except Exception as e:
             print(e)
+
+    # Define a function that handles and parses psycopg2 exceptions
+    def show_psycopg2_exception(err):
+        # get details about the exception
+        err_type, err_obj, traceback = sys.exc_info()    
+        # get the line number when exception occured
+        line_n = traceback.tb_lineno    
+        # print the connect() error
+        print ("\npsycopg2 ERROR:", err, "on line number:", line_n)
+        print ("psycopg2 traceback:", traceback, "-- type:", err_type) 
+        # psycopg2 extensions.Diagnostics object attribute
+        print ("\nextensions.Diagnostics:", err.diag)    
+        # print the pgcode and pgerror exceptions
+        print ("pgerror:", err.pgerror)
+        print ("pgcode:", err.pgcode, "\n")
+
+    # Define function using copy_from_dataFile to insert the dataframe.
+    def copy_from_dataFile(df, table):
+        #  Here we are going save the dataframe on disk as a csv file, load # the csv file and use copy_from() to copy it to the table
+        conn_string = common.get_pg_connection('')
+        conn = psycopg2.connect(conn_string)
+
+        tmp_df = table + '_temp.csv'
+        df.to_csv(tmp_df, header=False,index = False)
+        f = open(tmp_df, 'r')
+        cursor = conn.cursor()
+        try:
+            cursor.copy_from(f, table, sep=",")
+            print("Data inserted using copy_from_datafile() successfully....")
+        except (Exception, psycopg2.DatabaseError) as err:
+            os.remove(tmp_df)
+            # pass exception to function
+            common.show_psycopg2_exception(err)
+        cursor.close()
+        conn.close()
+
+    # Define function using copy_from() with StringIO to insert the dataframe
+    def copy_from_dataFile_StringIO(conn, datafrm, table):
+    
+        # save dataframe to an in memory buffer
+        buffer = StringIO()
+        datafrm.to_csv(buffer, header=False, index = False)
+        buffer.seek(0)
+    
+        cursor = conn.cursor()
+        try:
+            cursor.copy_from(buffer, table, sep=",")
+            print("Data inserted using copy_from_datafile_StringIO() successfully....")
+        except (Exception, psycopg2.DatabaseError) as err:
+            # pass exception to function
+            common.show_psycopg2_exception(err)
+        cursor.close()
 
     def read_load_save_data(**kwargs): 
         try:

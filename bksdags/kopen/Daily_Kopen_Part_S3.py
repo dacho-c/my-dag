@@ -57,7 +57,7 @@ def ETL_process(**kwargs):
     #c_size = kwargs['Chunk_Size']
     #C_condition = kwargs['Condition']
     # ETL ################################################################
-    common.copy_from_minio(tb_to + '.parquet')
+    common.copy_from_minio(**kwargs)
     df = pd.read_parquet(tb_to + '.parquet')
     df = df[['pro_komcode',
         'pro_komcode_o',

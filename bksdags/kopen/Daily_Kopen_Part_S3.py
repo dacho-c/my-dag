@@ -129,5 +129,5 @@ with DAG(
         python_callable= ETL_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
     )
-    t4.set_upstream(t4)
+    t4.set_upstream(t3)
     

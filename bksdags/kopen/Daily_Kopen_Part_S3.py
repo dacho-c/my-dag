@@ -42,12 +42,11 @@ def EL_process(**kwargs):
         pq.ParquetDataset(tb_to + '/', use_legacy_dataset=False).files
         print(f"Save to S3 data lake {rows} rows")
         del chunk_df
-        gc.collect()
     print("ETL Process finished")
     conn_db2.close()
 
     common.combine_parquet_files(**kwargs)
-
+    gc.collect()
     return True
 
 def ETL_process(**kwargs):

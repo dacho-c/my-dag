@@ -68,8 +68,8 @@ class common(object):
             os.remove(tables + '.parquet')
         if os.path.exists(tables):
             filelist = glob.glob(os.path.join(tables, "*"))
-        for f in filelist:
-            os.remove(f)
+            for f in filelist:
+                os.remove(f)
 
     def combine_parquet_files(**kwargs):
         input_folder = kwargs['To_Table']

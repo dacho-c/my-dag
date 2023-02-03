@@ -56,9 +56,7 @@ def ETL_process(**kwargs):
     #c_size = kwargs['Chunk_Size']
     #C_condition = kwargs['Condition']
     # ETL ################################################################
-    common.copy_from_minio(**kwargs)
-    df = pd.read_parquet(tb_to + '.parquet')
-    df = df[['pro_komcode',
+    col = ['pro_komcode',
         'pro_komcode_o',
         'pro_classid',
         'pro_name',
@@ -69,7 +67,8 @@ def ETL_process(**kwargs):
         'pro_model_code',
         'pro_last_purdate',
         'pro_cate',
-        'pro_sales_type']]
+        'pro_sales_type']
+    df = pd.read_parquet(tb_to + '.parquet', columns=col)
     
     dlstrcon = common.get_pg_connection('')
     # Create SQLAlchemy engine

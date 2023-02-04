@@ -21,11 +21,11 @@ default_args = {
 }
 
 with DAG(
-    '0100-day1-trigger-dagrun-dag',
+    '0005-day1-trigger-dagrun-dag',
     #start_date=datetime(2021, 1, 1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     max_active_runs=1,
-    schedule_interval='0 1 1 * *',
+    schedule_interval='5 0 1 * *',
     default_args=default_args,
     catchup=False
 ) as dag:

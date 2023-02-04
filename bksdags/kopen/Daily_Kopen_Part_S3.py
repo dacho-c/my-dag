@@ -49,12 +49,49 @@ def EL_process(**kwargs):
     gc.collect()
     return True
 
-def ETL_process(**kwargs):
+def PP_process(**kwargs):
 
     tb_to = kwargs['To_Table']
     primary_key = kwargs['Key']
-    #c_size = kwargs['Chunk_Size']
-    #C_condition = kwargs['Condition']
+
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+    ########################################################################
+    strexec = ''
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        strexec = ("DELETE FROM %s;") % (tb_to)
+    else:
+        strexec = """CREATE TABLE IF NOT EXISTS public.kp_part
+            (
+                pro_komcode text COLLATE pg_catalog."default",
+                pro_komcode_o text COLLATE pg_catalog."default",
+                pro_classid text COLLATE pg_catalog."default",
+                pro_name text COLLATE pg_catalog."default",
+                pro_last_saledate date,
+                pro_lastuserid text COLLATE pg_catalog."default",
+                pro_lasttime timestamp without time zone,
+                pro_status text COLLATE pg_catalog."default",
+                pro_model_code text COLLATE pg_catalog."default",
+                pro_last_purdate date,
+                pro_cate text COLLATE pg_catalog."default",
+                pro_sales_type text COLLATE pg_catalog."default"
+            );"""
+        strexec += (" ALTER TABLE %s ADD PRIMARY KEY (%s);" % (tb_to, primary_key))
+    # execute
+    with engine.connect() as conn:
+        conn.execute(strexec)
+        conn.close()
+    ########################################################################
+    return True
+
+def ETL_process(**kwargs):
+
+    tb_to = kwargs['To_Table']
+
     # ETL ################################################################
     col = ['pro_komcode',
         'pro_komcode_o',
@@ -69,24 +106,18 @@ def ETL_process(**kwargs):
         'pro_cate',
         'pro_sales_type']
     df = pd.read_parquet(tb_to + '.parquet', columns=col)
+    #######################################################################
+    df.pro_name = df.pro_name.str.replace(",", " ")
+    df.pro_komcode_o = df.pro_komcode_o.str.replace(",", " ")
+    df.pro_komcode = df.pro_komcode.str.replace(",", "")
+    #######################################################################
     
-    dlstrcon = common.get_pg_connection('')
-    # Create SQLAlchemy engine
-    engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
-
-    df.to_sql(tb_to, engine_dl, index=False, if_exists='replace')
-
     print(f"Save to Postgres {df.shape}")
-    del df
-    print("ETL Process finished")
-    ########################################################################
-    # execute
-    with engine_dl.connect() as conn:
-        conn.execute("ALTER TABLE %s ADD PRIMARY KEY (%s);" % (tb_to, primary_key))
-        conn.close()
-    ########################################################################
-    common.Del_File(**kwargs)
-    gc.collect()
+    if common.copy_from_dataFile(df,tb_to):
+        del df
+        print("ETL Process finished")
+        common.Del_File(**kwargs)
+        gc.collect()
     return True
 
 with DAG(
@@ -124,8 +155,16 @@ with DAG(
     t4 = PythonOperator(
         task_id='etl_kopen_part_data_lake',
         provide_context=True,
-        python_callable= ETL_process,
+        python_callable= PP_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
     )
     t4.set_upstream(t3)
+
+    t5 = PythonOperator(
+        task_id='etl_kopen_part_data_lake',
+        provide_context=True,
+        python_callable= ETL_process,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+    )
+    t5.set_upstream(t4)
     

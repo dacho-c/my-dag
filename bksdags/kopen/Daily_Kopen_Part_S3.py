@@ -153,7 +153,7 @@ with DAG(
     t3.set_upstream(t2)
 
     t4 = PythonOperator(
-        task_id='etl_kopen_part_data_lake',
+        task_id='prepare_kopen_part',
         provide_context=True,
         python_callable= PP_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}

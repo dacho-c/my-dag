@@ -110,6 +110,7 @@ def ETL_process(**kwargs):
     df.pro_name = df.pro_name.str.replace(",", " ")
     df.pro_komcode_o = df.pro_komcode_o.str.replace(",", " ")
     df.pro_komcode = df.pro_komcode.str.replace(",", "")
+    df.drop_duplicates(subset=['pro_komcode'], keep='last', inplace=False)
     #######################################################################
     
     print(f"Save to Postgres {df.shape}")

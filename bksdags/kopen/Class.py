@@ -6,10 +6,6 @@ import psycopg2
 #from psycopg2 import OperationalError, errorcodes, errors
 #import psycopg2.extras as extras
 from io import StringIO
-#import numpy as np
-#from sqlalchemy import create_engine
-#import seaborn as sns
-#import matplotlib.pyplot as plt
 
 import time
 import pandas as pd
@@ -50,6 +46,9 @@ class common(object):
         # Connection String to EGKopen db2
         db2strcon = "db2://%s:%s@%s:%s/%s" % (db2uid, db2pwd, db2host, db2port, db2database)
         return db2strcon
+    
+    def get_mailto(self):
+        return Variable.get('mailto')
 
     def copy_to_minio(**kwargs):
         tb_to = kwargs['To_Table']
@@ -77,8 +76,6 @@ class common(object):
 
     def Del_File(**kwargs):
         tables = kwargs['To_Table']
-        if os.path.exists(tables + ".parquet"):
-            os.remove(tables + '.parquet')
         if os.path.exists(tables):
             filelist = glob.glob(os.path.join(tables, "*"))
             for f in filelist:

@@ -5,7 +5,10 @@ from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.operators.email_operator import EmailOperator
 from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime, timezone, timedelta
-#import pendulum
+import pendulum
+import sys, os
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+from Class import common
 
 def print_task_type(**kwargs):
     """
@@ -22,7 +25,6 @@ default_args = {
     'depends_on_past': False,
     'email_on_failure': True,
     'email_on_retry': False,
-    'start_date': airflow.utils.dates.days_ago(0),
     'max_active_runs': 1,
     'retries': 2,
     'retry_delay': timedelta(minutes=10)
@@ -30,7 +32,8 @@ default_args = {
 
 with DAG(
     '0530-daily-trigger-dag',
-    #start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
+    #start_date= airflow.utils.dates.days_ago(0),
+    start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     schedule_interval='30 5 * * *',
     default_args=default_args,
     catchup=False
@@ -73,7 +76,7 @@ with DAG(
     AllTaskSuccess = EmailOperator(
         trigger_rule=TriggerRule.ALL_SUCCESS,
         task_id="AllTaskSuccess",
-        to=["dacho-c@bangkokkomatsusales.com"],
+        to=common.get_mailto(''),
         subject= now_fmt + " [0530-daily-trigger Task completed successfully]",
         html_content='<h3>All 0530-daily-trigger Task completed successfully" </h3>'
     )
@@ -82,7 +85,7 @@ with DAG(
     t1Failed = EmailOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
         task_id="t1Failed",
-        to=["dacho-c@bangkokkomatsusales.com"],
+        to=common.get_mailto(''),
         subject= now_fmt + "Daily Trigger T1 Failed",
         html_content='<h3>Daily Trigger T1 Failed</h3>'
     )

@@ -3,8 +3,8 @@ import pendulum
 from airflow.models import DAG
 #from airflow.operators.dummy import DummyOperator 
 from airflow.operators.python import PythonOperator
-from airflow import AirflowException
 #from airflow.utils.trigger_rule import TriggerRule
+
 import pandas as pd
 import sys, os
 import gc
@@ -40,7 +40,7 @@ def EL_process(**kwargs):
         table = pa.Table.from_pandas(chunk_df)
         pq.write_to_dataset(table ,root_path=tb_to)
         pq.ParquetDataset(tb_to + '/', use_legacy_dataset=False).files
-        print(f"Save to Airflow storage {rows} rows")
+        print(f"Save to S3 data lake {rows} rows")
         del chunk_df
     print("ETL Process finished")
     conn_db2.close()
@@ -58,24 +58,12 @@ def PP_process(**kwargs):
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
     ########################################################################
-    result_state = True
-    c_rows = 0
     strexec = ''
     # check exiting table
     ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
     if result.loc[0,'exists']:
-        ctable = "SELECT count(*) as c FROM %s;" % (tb_to)
-        result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
-        c_rows = result.loc[0,'c']
-        if os.path.exists(tb_to + ".parquet"):
-            table = pq.read_table(tb_to + ".parquet", columns=[])
-            print(table.num_rows)
-            if table.num_rows <= (c_rows * 0.8):
-                os.remove(tb_to + '.parquet')
-                result_state = False
-                del table
-                raise ValueError('New DATA ROWS are less then 80% of exiting tables') 
+        strexec = ("DELETE FROM %s;") % (tb_to)
     else:
         strexec = """CREATE TABLE IF NOT EXISTS public.kp_part
             (
@@ -93,22 +81,17 @@ def PP_process(**kwargs):
                 pro_sales_type text COLLATE pg_catalog."default"
             );"""
         strexec += (" ALTER TABLE %s ADD PRIMARY KEY (%s);" % (tb_to, primary_key))
-        # execute
-        with engine.connect() as conn:
-            conn.execute(strexec)
-            conn.close()
-    ###############################################################################
-    return result_state
+    # execute
+    with engine.connect() as conn:
+        #conn.execute(strexec)
+        conn.close()
+    ########################################################################
+    return True
 
 def ETL_process(**kwargs):
 
     tb_to = kwargs['To_Table']
 
-    dlstrcon = common.get_pg_connection('')
-    # Create SQLAlchemy engine
-    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
-    ########################################################################
-    c_columns = 0
     # ETL ################################################################
     col = ['pro_komcode',
         'pro_komcode_o',
@@ -122,37 +105,24 @@ def ETL_process(**kwargs):
         'pro_last_purdate',
         'pro_cate',
         'pro_sales_type']
-    df = pd.read_parquet(tb_to + '.parquet', columns=col)
+    #df = pd.read_parquet(tb_to + '.parquet', columns=col)
     #######################################################################
-    df.pro_name = df.pro_name.str.replace(",", " ")
-    df.pro_komcode_o = df.pro_komcode_o.str.replace(",", " ")
-    df.pro_komcode = df.pro_komcode.str.replace(",", "")
-    df = df.drop_duplicates(subset=['pro_komcode'])
+    #df.pro_name = df.pro_name.str.replace(",", " ")
+    #df.pro_komcode_o = df.pro_komcode_o.str.replace(",", " ")
+    #df.pro_komcode = df.pro_komcode.str.replace(",", "")
+    #df = df.drop_duplicates(subset=['pro_komcode'])
     #######################################################################
-    ctable = "SELECT count(*) as c FROM information_schema.columns WHERE table_name = '%s';" % (tb_to)
-    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
-    c_columns = result.loc[0,'c']
-    print('DF (rows, col) : ' + df.shape)
-    if c_columns == df.shape[1]:
-        # execute
-        with engine.connect() as conn:
-            conn.execute("DELETE FROM %s;" % (tb_to))
-            conn.close()
-        print(f"Save to Postgres {df.shape}")
-        if common.copy_from_dataFile(df,tb_to):
-            del df
-            print("ETL Process finished")
-    else:
-        raise ValueError('New DATA Columns are not same of exiting tables') 
-    ########################################################################        
-    common.Del_File(**kwargs)
-    if os.path.exists(tb_to + ".parquet"):
-        os.remove(tb_to + '.parquet')
-    gc.collect()
+    
+    print(f"Save to Postgres {df.shape}")
+    if common.copy_from_dataFile(df,tb_to):
+        del df
+        print("ETL Process finished")
+        common.Del_File(**kwargs)
+        gc.collect()
     return True
 
 with DAG(
-    'Kopen_Part_Daily_db2S3minio_dag',
+    'Kopen_Stock_1Hour_db2S3minio_dag',
     schedule_interval=None,
     dagrun_timeout=timedelta(minutes=60),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
@@ -168,26 +138,34 @@ with DAG(
     )
 
     t2 = PythonOperator(
-        task_id='prepare_kopen_part',
-        provide_context=True,
-        python_callable= PP_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
-    )
-    t2.set_upstream(t1)
-
-    t3 = PythonOperator(
         task_id='copy_part_to_s3_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
     )
+    t2.set_upstream(t1)
+
+    t3 = PythonOperator(
+        task_id='copy_part_from_s3_data_lake',
+        provide_context=True,
+        python_callable= common.copy_from_minio,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+    )
     t3.set_upstream(t2)
 
     t4 = PythonOperator(
+        task_id='prepare_kopen_part',
+        provide_context=True,
+        python_callable= PP_process,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+    )
+    t4.set_upstream(t3)
+
+    t5 = PythonOperator(
         task_id='etl_kopen_part_data_lake',
         provide_context=True,
         python_callable= ETL_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
     )
-    t4.set_upstream(t3)
+    t5.set_upstream(t4)
     

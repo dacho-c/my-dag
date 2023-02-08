@@ -132,7 +132,7 @@ def ETL_process(**kwargs):
     ctable = "SELECT count(*) as c FROM information_schema.columns WHERE table_name = '%s';" % (tb_to)
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
     c_columns = result.loc[0,'c']
-    print('DF (rows, col) : ' + df.shape)
+    print(f"DF (rows, col) :  {df.shape}")
     if c_columns == df.shape[1]:
         # execute
         with engine.connect() as conn:
@@ -160,12 +160,12 @@ with DAG(
 ) as dag:
     
     ################### PART #############################################################################################################
-    t1 = PythonOperator(
-        task_id='el_kopen_part_data',
-        provide_context=True,
-        python_callable=EL_process,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
-    )
+    #t1 = PythonOperator(
+    #    task_id='el_kopen_part_data',
+    #    provide_context=True,
+    #    python_callable=EL_process,
+    #    op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+    #)
 
     t2 = PythonOperator(
         task_id='prepare_kopen_part',

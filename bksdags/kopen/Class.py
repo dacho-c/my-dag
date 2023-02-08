@@ -19,7 +19,7 @@ import minio
 import gc
 import os, glob
 from sql import sql_detail_select, sql_detail_delete
-from function import get_last_ym, get_today
+from function import get_last_ym, get_today, get_lastday
 
 class common(object):
 
@@ -52,6 +52,7 @@ class common(object):
 
     def copy_to_minio(**kwargs):
         tb_to = kwargs['To_Table']
+        ld = kwargs['Last_Days']
         targetfile = tb_to + '.parquet'
         s3_endpoint = Variable.get('s3_endpoint')
         s3_access_key = Variable.get('s3_access_key')
@@ -60,10 +61,12 @@ class common(object):
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
         client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
+        client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
         return True
 
     def copy_from_minio(**kwargs):
         tb_to = kwargs['To_Table']
+        ld = kwargs['Last_Days']
         targetfile = tb_to + '.parquet'
         s3_endpoint = Variable.get('s3_endpoint')
         s3_access_key = Variable.get('s3_access_key')
@@ -71,7 +74,7 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fget_object("datalake",targetfile,'/opt/airflow/' + targetfile )
+        client.fget_object("datalake",get_lastday(ld) + '-' + targetfile,'/opt/airflow/' + targetfile )
         return True
 
     def Del_File(**kwargs):

@@ -29,6 +29,11 @@ def get_yesterday():
     yday = today - datetime.timedelta(days=1)
     return yday.strftime("%Y-%m-%d")
 
+def get_lastday(dint):
+    today = datetime.date.today()
+    yday = today - datetime.timedelta(days=dint)
+    return yday.strftime("%Y-%m-%d")
+
 def get_firstdate_this_m():
     today = datetime.date.today()
     first = today.replace(day=1)

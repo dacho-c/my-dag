@@ -179,7 +179,7 @@ with DAG(
         task_id='copy_part_to_s3_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': "", 'Last_Days': 3}
     )
     t3.set_upstream(t2)
 

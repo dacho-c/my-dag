@@ -160,12 +160,12 @@ with DAG(
 ) as dag:
     
     ################### PART #############################################################################################################
-    #t1 = PythonOperator(
-    #    task_id='el_kopen_part_data',
-    #    provide_context=True,
-    #    python_callable=EL_process,
-    #    op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
-    #)
+    t1 = PythonOperator(
+        task_id='el_kopen_part_data',
+        provide_context=True,
+        python_callable=EL_process,
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
+    )
 
     t2 = PythonOperator(
         task_id='prepare_kopen_part',
@@ -173,7 +173,7 @@ with DAG(
         python_callable= PP_process,
         op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': ""}
     )
-    #t2.set_upstream(t1)
+    t2.set_upstream(t1)
 
     t3 = PythonOperator(
         task_id='copy_part_to_s3_data_lake',

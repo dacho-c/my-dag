@@ -19,7 +19,7 @@ import minio
 import gc
 import os, glob
 from sql import sql_detail_select, sql_detail_delete
-from function import get_last_ym
+from function import get_last_ym, get_today
 
 class common(object):
 
@@ -59,7 +59,7 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fput_object("datalake",targetfile,'/opt/airflow/' + targetfile)
+        client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
         return True
 
     def copy_from_minio(**kwargs):

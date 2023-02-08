@@ -59,7 +59,7 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fput_object("datalake",targetfile,targetfile )
+        client.fput_object("datalake",targetfile,'/opt/airflow/' + targetfile)
         return True
 
     def copy_from_minio(**kwargs):
@@ -71,7 +71,7 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fget_object("datalake",targetfile,targetfile )
+        client.fget_object("datalake",targetfile,'/opt/airflow/' + targetfile )
         return True
 
     def Del_File(**kwargs):

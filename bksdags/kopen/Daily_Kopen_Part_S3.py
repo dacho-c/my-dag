@@ -90,7 +90,8 @@ def PP_process(**kwargs):
                 pro_model_code text COLLATE pg_catalog."default",
                 pro_last_purdate date,
                 pro_cate text COLLATE pg_catalog."default",
-                pro_sales_type text COLLATE pg_catalog."default"
+                pro_sales_type text COLLATE pg_catalog."default",
+                pro_rank text COLLATE pg_catalog."default"
             );"""
         strexec += (" ALTER TABLE %s ADD PRIMARY KEY (%s);" % (tb_to, primary_key))
         # execute
@@ -121,7 +122,8 @@ def ETL_process(**kwargs):
         'pro_model_code',
         'pro_last_purdate',
         'pro_cate',
-        'pro_sales_type']
+        'pro_sales_type',
+        'pro_rank']
     df = pd.read_parquet(tb_to + '.parquet', columns=col)
     #######################################################################
     df.pro_name = df.pro_name.str.replace(",", " ")

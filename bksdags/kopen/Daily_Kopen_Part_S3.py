@@ -79,21 +79,21 @@ def PP_process(**kwargs):
     else:
         strexec = """CREATE TABLE IF NOT EXISTS public.kp_part
             (
-                pro_komcode text COLLATE pg_catalog."default",
-                pro_komcode_o text COLLATE pg_catalog."default",
-                pro_classid text COLLATE pg_catalog."default",
-                pro_name text COLLATE pg_catalog."default",
-                pro_last_saledate date,
-                pro_lastuserid text COLLATE pg_catalog."default",
-                pro_lasttime timestamp without time zone,
-                pro_status text COLLATE pg_catalog."default",
-                pro_model_code text COLLATE pg_catalog."default",
-                pro_last_purdate date,
-                pro_cate text COLLATE pg_catalog."default",
-                pro_sales_type text COLLATE pg_catalog."default",
-                pro_rank text COLLATE pg_catalog."default"
-            );"""
-        strexec += (" ALTER TABLE %s ADD PRIMARY KEY (%s);" % (tb_to, primary_key))
+                pro_komcode text NOT NULL,
+                pro_komcode_o text NULL,
+                pro_classid text NULL,
+                pro_name text NULL,
+                pro_last_saledate date NULL,
+                pro_lastuserid text NULL,
+                pro_lasttime timestamp NULL,
+                pro_status text NULL,
+                pro_model_code text NULL,
+                pro_last_purdate date NULL,
+                pro_cate text NULL,
+                pro_sales_type text NULL,
+                pro_rank text NULL,
+                CONSTRAINT %s_pkey PRIMARY KEY (%s)
+            );""" % (tb_to, primary_key)
         # execute
         with engine.connect() as conn:
             conn.execute(strexec)
@@ -104,13 +104,14 @@ def PP_process(**kwargs):
 def ETL_process(**kwargs):
 
     tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
 
     dlstrcon = common.get_pg_connection('')
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
     ########################################################################
     c_columns = 0
-    # ETL ################################################################
+    # ETL ##################################################################
     col = ['pro_komcode',
         'pro_komcode_o',
         'pro_classid',
@@ -125,21 +126,45 @@ def ETL_process(**kwargs):
         'pro_sales_type',
         'pro_rank']
     df = pd.read_parquet(tb_to + '.parquet', columns=col)
-    #######################################################################
+    ########################################################################
     df.pro_name = df.pro_name.str.replace(",", " ")
     df.pro_komcode_o = df.pro_komcode_o.str.replace(",", " ")
     df.pro_komcode = df.pro_komcode.str.replace(",", "")
     df = df.drop_duplicates(subset=['pro_komcode'])
-    #######################################################################
+    ########################################################################
     ctable = "SELECT count(*) as c FROM information_schema.columns WHERE table_name = '%s';" % (tb_to)
     result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
     c_columns = result.loc[0,'c']
+    ########################################################################
+    ctable = "SELECT count(*) as c FROM %s;" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    c_rows = result.loc[0,'c']
+    ########################################################################
     print(f"DF (rows, col) :  {df.shape}")
     if c_columns == df.shape[1]:
-        # execute
-        with engine.connect() as conn:
-            conn.execute("DELETE FROM %s;" % (tb_to))
-            conn.close()
+        if c_rows > 0:
+            # execute
+            with engine.connect() as conn:
+                conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to))
+                strexec = """CREATE TABLE IF NOT EXISTS public.kp_part
+                (
+                    pro_komcode text NOT NULL,
+                    pro_komcode_o text NULL,
+                    pro_classid text NULL,
+                    pro_name text NULL,
+                    pro_last_saledate date NULL,
+                    pro_lastuserid text NULL,
+                    pro_lasttime timestamp NULL,
+                    pro_status text NULL,
+                    pro_model_code text NULL,
+                    pro_last_purdate date NULL,
+                    pro_cate text NULL,
+                    pro_sales_type text NULL,
+                    pro_rank text NULL,
+                    CONSTRAINT %s_pkey PRIMARY KEY (%s)
+                );""" % (tb_to, primary_key)
+                conn.execute(strexec)
+                conn.close()
         print(f"Save to Postgres {df.shape}")
         if common.copy_from_dataFile(df,tb_to):
             del df

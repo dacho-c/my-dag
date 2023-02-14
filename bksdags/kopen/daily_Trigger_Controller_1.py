@@ -6,33 +6,9 @@ from airflow.operators.email_operator import EmailOperator
 from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime, timezone, timedelta
 import pendulum
-import smtplib, ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
-
-def send_mail():
-    FROM = "sysinfo@bangkokkomatsusales.com" 
-    TO = ["dacho-c@bangkokkomatsusales.com"] # must be a list
-
-    SUBJECT = "Hello!"
-    TEXT = "This is a test of emailing through smtp of example.com."
-
-    # Prepare actual message
-    message = """From: %s\r\nTo: %s\r\nSubject: %s\r\n\
-
-        %s
-        """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
-
-    # Send the mail
-    server = smtplib.SMTP(host='smtp.office365.com', port=587)
-    server.starttls()
-    server.login("sysinfo@bangkokkomatsusales.com", "crm@12345")
-    server.sendmail(FROM, TO, message)
-    server.quit()
-    return True
 
 def print_task_type(**kwargs):
     """
@@ -100,13 +76,31 @@ with DAG(
     AllTaskSuccess = PythonOperator(
         trigger_rule=TriggerRule.ALL_SUCCESS,
         task_id="AllTaskSuccess",
-        python_callable=send_mail
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'success', 'msubject': 'ETL AllTaskSuccess 05.30 (Daily)', 'text': 'AllTaskSuccess 05.30 (Daily Kopen) Part, Master Table, Monthly Stock'}
     )
     AllTaskSuccess.set_upstream([t_start,t1,t2,t4,t_end])
     
     t1Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
         task_id="t1Failed",
-        python_callable=send_mail
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Part Task Error 05.30 (Daily)', 'text': 'Part Task Error 05.30 (Daily)'}
     )
     t1Failed.set_upstream([t1])
+
+    t2Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t2Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Master Task Error 05.30 (Daily)', 'text': 'Master Table Task Error 05.30 (Daily)'}
+    )
+    t2Failed.set_upstream([t2])
+
+    t4Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t4Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Monthly Stock Task Error 05.30 (Daily)', 'text': 'Monthly Stock Task Error 05.30 (Daily)'}
+    )
+    t4Failed.set_upstream([t4])

@@ -16,6 +16,9 @@ from sqlalchemy import create_engine, delete
 #import datetime
 from airflow.models import Variable
 import minio
+import smtplib, ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import gc
 import os, glob
 from sql import sql_detail_select, sql_detail_delete
@@ -49,6 +52,31 @@ class common(object):
     
     def get_mailto(self):
         return Variable.get('mailto')
+    
+    def send_mail(**kwargs):
+        TYPE = kwargs['mtype'] 
+        if TYPE == 'err':
+            FROM = Variable.get('mailfrom') 
+        else:
+            FROM = Variable.get('mailfrom_err')
+        TO = Variable.get('mailto') # must be a list
+    
+        SUBJECT = kwargs['msubject']
+        TEXT = kwargs['text']
+    
+        # Prepare actual message
+        message = """From: %s\r\nTo: %s\r\nSubject: %s\r\n\
+    
+            %s
+            """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+    
+        # Send the mail
+        server = smtplib.SMTP(host=Variable.get('mailhost'), port=587)
+        server.starttls()
+        server.login(FROM, Variable.get('mail_secret'))
+        server.sendmail(FROM, TO, message)
+        server.quit()
+        return True
 
     def copy_to_minio(**kwargs):
         tb_to = kwargs['To_Table']
@@ -69,6 +97,33 @@ class common(object):
         ld = kwargs['Last_Days']
         targetfile = tb_to + '.parquet'
         s3_endpoint = Variable.get('s3_endpoint')
+        s3_access_key = Variable.get('s3_access_key')
+        s3_secret_key = Variable.get('s3_secret_key')
+        # Create the client
+        client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
+        # Put the object into minio
+        client.fget_object("datalake",get_lastday(ld) + '-' + targetfile,'/opt/airflow/' + targetfile )
+        return True
+    
+    def copy_to_minio_sl(**kwargs):
+        tb_to = kwargs['To_Table']
+        ld = kwargs['Last_Days']
+        targetfile = tb_to + '.parquet'
+        s3_endpoint = Variable.get('s3_endpoint_bp')
+        s3_access_key = Variable.get('s3_access_key')
+        s3_secret_key = Variable.get('s3_secret_key')
+        # Create the client
+        client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
+        # Put the object into minio
+        client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
+        client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
+        return True
+
+    def copy_from_minio_sl(**kwargs):
+        tb_to = kwargs['To_Table']
+        ld = kwargs['Last_Days']
+        targetfile = tb_to + '.parquet'
+        s3_endpoint = Variable.get('s3_endpoint_bp')
         s3_access_key = Variable.get('s3_access_key')
         s3_secret_key = Variable.get('s3_secret_key')
         # Create the client

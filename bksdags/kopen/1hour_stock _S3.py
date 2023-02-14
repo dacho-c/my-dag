@@ -135,6 +135,7 @@ def ETL_process(**kwargs):
     # ETL ##################################################################
     df = pd.read_parquet(tb_to + '.parquet')
     ########################################################################
+    df['item_id'] = df.st_org_id + df.st_wh_id + df.st_sr_id + df.st_lo_id + df.st_pro_id
     #df.pro_name = df.pro_name.str.replace(",", " ")
     #df = df.drop_duplicates(subset=['pro_komcode'])
     ########################################################################

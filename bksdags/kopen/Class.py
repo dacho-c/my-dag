@@ -55,34 +55,25 @@ class common(object):
     
     def send_mail(**kwargs):
         TYPE = kwargs['mtype'] 
+        FROM = Variable.get('mailfrom') 
         if TYPE == 'err':
-            FROM = Variable.get('mailfrom') 
+            TO = Variable.get('mailto_err')
         else:
-            FROM = Variable.get('mailfrom_err')
-        TO = Variable.get('mailto') # must be a list
-    
+            TO = Variable.get('mailto')
+        
         SUBJECT = kwargs['msubject']
         TEXT = kwargs['text']
     
         # Prepare actual message
-        #message = """From: %s\r\nTo: %s\r\nSubject: %s\r\n\
-        #
-            #%s
-           # """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
         msg = MIMEText(TEXT)
         msg['Subject'] = SUBJECT
         msg['From'] = FROM
-        msg['To'] = ', '.join(TO)
-        smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        msg['To'] = TO
+        smtp_server = smtplib.SMTP_SSL(Variable.get('mailhost'), Variable.get('mailport'))
         smtp_server.login(FROM, Variable.get('mail_secret'))
         smtp_server.sendmail(FROM, TO, msg.as_string())
         smtp_server.quit()
         # Send the mail
-        #server = smtplib.SMTP(host=Variable.get('mailhost'), port=Variable.get('mailport'))
-        #server.starttls()
-        #server.login(FROM, Variable.get('mail_secret'))
-        #server.sendmail(FROM, TO, message)
-        #server.quit()
         return True
 
     def copy_to_minio(**kwargs):

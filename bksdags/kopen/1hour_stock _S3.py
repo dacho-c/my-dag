@@ -135,7 +135,21 @@ def ETL_process(**kwargs):
     # ETL ##################################################################
     df = pd.read_parquet(tb_to + '.parquet')
     ########################################################################
-    df['item_id'] = df.st_org_id + df.st_wh_id + df.st_sr_id + df.st_lo_id + df.st_pro_id
+    df['item_id'] = df.st_org_id + df.st_wh_id + df.st_sr_id + df.st_lo_id + df.st_pro_id + df.st_pro_komcode
+    df = df[['item_id','st_org_id', 'st_wh_id', 'st_sr_id', 'st_lo_id', 'st_pro_id',
+       'st_pro_komcode', 'st_dep_id', 'st_hold_pur', 'st_hold_cus',
+       'st_hold_rep', 'st_out_cus', 'st_out_rep', 'st_enable_stock',
+       'st_balance_stock', 'st_return_stock', 'st_in_total', 'st_out_total',
+       'st_cost_notax_price', 'st_lastuserid', 'st_lasttime', 'st_status',
+       'st_lastintime', 'st_lastouttime', 'st_hold_trans', 'st_out_trans',
+       'st_in_date', 'st_sale_date', 'st_picked_qty', 'st_startdate',
+       'st_enddate', 'st_adjustment_date', 'st_sr_qty', 'st_hold_pur_po',
+       'st_hold_rep_po']]
+    df['st_in_date'] = df['st_in_date'].fillna('1999-01-01')
+    df['st_sale_date'] = df['st_sale_date'].fillna('1999-01-01')
+    df['st_startdate'] = df['st_startdate'].fillna('1999-01-01')
+    df['st_enddate'] = df['st_enddate'].fillna('1999-01-01')
+    df['st_adjustment_date'] = df['st_adjustment_date'].fillna('1999-01-01')
     #df.pro_name = df.pro_name.str.replace(",", " ")
     #df = df.drop_duplicates(subset=['pro_komcode'])
     ########################################################################

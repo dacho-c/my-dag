@@ -65,17 +65,24 @@ class common(object):
         TEXT = kwargs['text']
     
         # Prepare actual message
-        message = """From: %s\r\nTo: %s\r\nSubject: %s\r\n\
-    
-            %s
-            """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
-    
+        #message = """From: %s\r\nTo: %s\r\nSubject: %s\r\n\
+        #
+            #%s
+           # """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+        msg = MIMEText(TEXT)
+        msg['Subject'] = SUBJECT
+        msg['From'] = FROM
+        msg['To'] = ', '.join(TO)
+        smtp_server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        smtp_server.login(FROM, Variable.get('mail_secret'))
+        smtp_server.sendmail(FROM, TO, msg.as_string())
+        smtp_server.quit()
         # Send the mail
-        server = smtplib.SMTP(host=Variable.get('mailhost'), port=587)
-        server.starttls()
-        server.login(FROM, Variable.get('mail_secret'))
-        server.sendmail(FROM, TO, message)
-        server.quit()
+        #server = smtplib.SMTP(host=Variable.get('mailhost'), port=Variable.get('mailport'))
+        #server.starttls()
+        #server.login(FROM, Variable.get('mail_secret'))
+        #server.sendmail(FROM, TO, message)
+        #server.quit()
         return True
 
     def copy_to_minio(**kwargs):

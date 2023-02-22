@@ -415,9 +415,12 @@ def ETL_process(**kwargs):
                 conn.execute(strexec)
                 conn.close()
         print(f"Save to Postgres {df.shape}")
-        if common.copy_from_dataFile(df,tb_to):
+        try:
+            df.to_sql(tb_to, engine, index=False, if_exists='append')
             del df
             print("ETL Process finished")
+        except Exception as err:
+            print(err)
     else:
         raise ValueError('New DATA Columns are not same of exiting tables') 
     ########################################################################        

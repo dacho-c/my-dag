@@ -21,8 +21,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import gc
 import os, glob
-from sql import sql_detail_select, sql_detail_delete
-from function import get_last_ym, get_today, get_lastday
+from function import get_today, get_lastday
 
 class common(object):
 

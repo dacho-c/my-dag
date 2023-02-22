@@ -22,8 +22,8 @@ from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.inspection import inspect
 import sys, os
+import gc
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
-#from function import get_yesterday
 from Class import common
 
 def PP_process(**kwargs):

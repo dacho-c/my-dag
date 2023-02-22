@@ -206,7 +206,7 @@ with DAG(
         task_id='copy_part_to_s3_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': "", 'Last_Days': 2}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': "", 'Last_Days': 1}
     )
     t3.set_upstream(t2)
 
@@ -214,7 +214,7 @@ with DAG(
         task_id='copy_part_to_s3sl_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio_sl,
-        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': "", 'Last_Days': 4}
+        op_kwargs={'From_Table': "PRODUCT", 'To_Table': "kp_part", 'Chunk_Size': 50000, 'Key': 'pro_komcode', 'Condition': "", 'Last_Days': 2}
     )
     t4.set_upstream(t3)
 

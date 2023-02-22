@@ -580,7 +580,7 @@ with DAG(
         task_id='prepare_salesforce_account',
         provide_context=True,
         python_callable= PP_process,
-        op_kwargs={'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
     )
     t4.set_upstream(t3)
 
@@ -588,6 +588,6 @@ with DAG(
         task_id='etl_kopen_stock_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'To_Table': "kp_stock", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
+        op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
     )
     t5.set_upstream(t4)

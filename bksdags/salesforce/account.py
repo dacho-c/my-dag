@@ -562,8 +562,8 @@ with DAG(
         http_conn_id='bks_api',
         method='POST',
         endpoint='etl/sf/sfaccount',
-        data=json.dumps({"q": 0}),
-        headers={"Content-Type": "application/json"},
+        #data=json.dumps({"q": 0}),
+        #headers={"Content-Type": "application/json"},
         log_response=True
     )
     t2.set_upstream(t1)

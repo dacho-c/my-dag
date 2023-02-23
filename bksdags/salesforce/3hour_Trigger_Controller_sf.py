@@ -1,8 +1,14 @@
+import airflow
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from datetime import datetime, timedelta
+from airflow.operators.email_operator import EmailOperator
+from airflow.utils.trigger_rule import TriggerRule
+from datetime import datetime, timezone, timedelta
 import pendulum
+import sys, os
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+from Class import common
 
 def print_task_type(**kwargs):
     """
@@ -10,14 +16,18 @@ def print_task_type(**kwargs):
     """
     print(f"The {kwargs['task_type']} task has completed.")
 
+now = datetime.now()
+now_fmt = now.strftime('%Y-%m-%d_%H:%M:%S%z')
 # Default settings applied to all tasks
 default_args = {
     'owner': 'airflow',
+    'email': ['dacho-c@bangkokkomatsusales.com'],
     'depends_on_past': False,
-    'email_on_failure': False,
+    'email_on_failure': True,
     'email_on_retry': False,
+    'max_active_runs': 1,
     'retries': 2,
-    'retry_delay': timedelta(minutes=5)
+    'retry_delay': timedelta(minutes=10)
 }
 
 with DAG(
@@ -25,63 +35,133 @@ with DAG(
     #start_date=datetime(2021, 1, 1),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     max_active_runs=1,
-    schedule_interval='15 7-21/3 * * *',
+    schedule_interval='15 7-19/3 * * *',
     default_args=default_args,
     catchup=False
 ) as dag:
 
-    start_task = PythonOperator(
+    t_start = PythonOperator(
         task_id='starting_task',
         python_callable=print_task_type,
         op_kwargs={'task_type': 'starting'}
     )
-
-    trigger_Salesforce_Account_dag = TriggerDagRunOperator(
+    
+    t1 = TriggerDagRunOperator(
         task_id="trigger_Salesforce_Account_dag",
-        trigger_dag_id="Salesforce_Account_ETL_dag",
+        trigger_dag_id="Salesforce_Account_ETLfromS3_dag",
         wait_for_completion=True
     )
+    t1.set_upstream(t_start)
 
-    trigger_Salesforce_Asset_dag = TriggerDagRunOperator(
+    t2 = TriggerDagRunOperator(
         task_id="trigger_Salesforce_Asset_dag",
-        trigger_dag_id="Salesforce_Asset_ETL_dag",
+        trigger_dag_id="Salesforce_Asset_ETLfromS3_dag",
         wait_for_completion=True
     )
+    t2.set_upstream(t1)
 
-    trigger_Salesforce_Cases_dag = TriggerDagRunOperator(
+    t3 = TriggerDagRunOperator(
         task_id="trigger_Salesforce_Cases_dag",
-        trigger_dag_id="Salesforce_Cases_ETL_dag",
+        trigger_dag_id="Salesforce_Cases_ETLfromS3_dag",
         wait_for_completion=True
     )
+    t3.set_upstream(t2)
 
-    trigger_Salesforce_opportunity_dag = TriggerDagRunOperator(
+    t4 = TriggerDagRunOperator(
         task_id="trigger_Salesforce_opportunity_dag",
-        trigger_dag_id="Salesforce_opportunity_ETL_dag",
+        trigger_dag_id="Salesforce_opportunity_ETLfromS3_dag",
         wait_for_completion=True
     )
+    t4.set_upstream(t3)
 
-    trigger_Salesforce_Order_dag = TriggerDagRunOperator(
+    t5 = TriggerDagRunOperator(
         task_id="trigger_Salesforce_Order_dag",
-        trigger_dag_id="Salesforce_Order_ETL_dag",
+        trigger_dag_id="Salesforce_Order_ETLfromS3_dag",
         wait_for_completion=True
     )
+    t5.set_upstream(t4)
 
-    trigger_Salesforce_Quote_dag = TriggerDagRunOperator(
+    t6 = TriggerDagRunOperator(
         task_id="trigger_Salesforce_Quote_dag",
-        trigger_dag_id="Salesforce_Quote_ETL_dag",
+        trigger_dag_id="Salesforce_Quote_ETLfromS3_dag",
         wait_for_completion=True
     )
+    t6.set_upstream(t5)
 
-    trigger_Salesforce_User_dag = TriggerDagRunOperator(
+    t7 = TriggerDagRunOperator(
         task_id="trigger_Salesforce_User_dag",
-        trigger_dag_id="Salesforce_User_ETL_dag",
+        trigger_dag_id="Salesforce_User_ETLfromS3_dag",
         wait_for_completion=True
     )
+    t7.set_upstream(t6)
 
-    end_task = PythonOperator(
+    t_end = PythonOperator(
         task_id='end_task',
         python_callable=print_task_type,
         op_kwargs={'task_type': 'ending'}
     )
+    t_end.set_upstream(t7)
 
-    start_task >> trigger_Salesforce_Account_dag >> trigger_Salesforce_Asset_dag >> trigger_Salesforce_Cases_dag >> trigger_Salesforce_opportunity_dag >> trigger_Salesforce_Order_dag >> trigger_Salesforce_Quote_dag >> trigger_Salesforce_User_dag >> end_task
+    AllTaskSuccess = PythonOperator(
+        trigger_rule=TriggerRule.ALL_SUCCESS,
+        task_id="AllTaskSuccess",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'success', 'msubject': 'ETL AllTaskSuccess 07.15 (Every 3 Hours)', 'text': 'AllTaskSuccess 07.15 (Every 3 Hours Salesforce) '}
+    )
+    AllTaskSuccess.set_upstream([t_start,t1,t2,t3,t4,t5,t6,t7,t_end])
+    
+    t1Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t1Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Account Task Error 07.15 (Every 3 Hours)', 'text': 'Account Task Error 07.15 (Every 3 Hours)'}
+    )
+    t1Failed.set_upstream([t1])
+
+    t2Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t2Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Asset Task Error 07.15 (Every 3 Hours)', 'text': 'Asset Task Error 07.15 (Every 3 Hours)'}
+    )
+    t2Failed.set_upstream([t2])
+
+    t3Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t3Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Cases Task Error 07.15 (Every 3 Hours)', 'text': 'Cases Task Error 07.15 (Every 3 Hours)'}
+    )
+    t3Failed.set_upstream([t3])
+
+    t4Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t4Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Opportunity Task Error 07.15 (Every 3 Hours)', 'text': 'Opportunity Task Error 07.15 (Every 3 Hours)'}
+    )
+    t4Failed.set_upstream([t4])
+
+    t5Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t5Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Order Task Error 07.15 (Every 3 Hours)', 'text': 'Order Task Error 07.15 (Every 3 Hours)'}
+    )
+    t5Failed.set_upstream([t5])
+
+    t6Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t6Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Quote Task Error 07.15 (Every 3 Hours)', 'text': 'Quote Task Error 07.15 (Every 3 Hours)'}
+    )
+    t6Failed.set_upstream([t6])
+
+    t7Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t7Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL User Task Error 07.15 (Every 3 Hours)', 'text': 'User Task Error 07.15 (Every 3 Hours)'}
+    )
+    t7Failed.set_upstream([t7])

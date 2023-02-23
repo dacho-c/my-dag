@@ -9,6 +9,8 @@ from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
+import pyarrow.parquet as pq
+import pyarrow as pa
 import pandas as pd
 import sqlalchemy
 from sqlalchemy import Column, Integer, Date
@@ -20,9 +22,265 @@ from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.inspection import inspect
 import sys, os
+import gc
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
-#from function import get_yesterday
 from Class import common
+
+def PP_process(**kwargs):
+
+    tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+    ########################################################################
+    result_state = True
+    c_rows = 0
+    strexec = ''
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        ctable = "SELECT count(*) as c FROM %s;" % (tb_to)
+        result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+        c_rows = result.loc[0,'c']
+        if os.path.exists(tb_to + ".parquet"):
+            table = pq.read_table(tb_to + ".parquet", columns=[])
+            print(table.num_rows)
+            if table.num_rows <= (c_rows * 0.8):
+                os.remove(tb_to + '.parquet')
+                result_state = False
+                del table
+                raise ValueError('New DATA ROWS are less then 80% of exiting tables') 
+    else:
+        strexec = """CREATE TABLE IF NOT EXISTS public.sf_user (
+	aboutme text NULL,
+	accountid text NULL,
+	alias text NULL,
+	badgetext text NULL,
+	bannerphotourl text NULL,
+	branch__c text NULL,
+	callcenterid text NULL,
+	city text NULL,
+	communitynickname text NULL,
+	companyname text NULL,
+	contactid text NULL,
+	country text NULL,
+	createdbyid text NULL,
+	createddate text NULL,
+	defaultgroupnotificationfrequency text NULL,
+	delegatedapproverid text NULL,
+	department text NULL,
+	digestfrequency text NULL,
+	division text NULL,
+	email text NULL,
+	emailencodingkey text NULL,
+	emailpreferencesautobcc bool NULL,
+	emailpreferencesautobccstayintouch bool NULL,
+	emailpreferencesstayintouchreminder bool NULL,
+	employeenumber text NULL,
+	"extension" text NULL,
+	fax text NULL,
+	federationidentifier text NULL,
+	firstname text NULL,
+	firstname_th__c text NULL,
+	forecastenabled bool NULL,
+	fullphotourl text NULL,
+	geocodeaccuracy text NULL,
+	id text NOT NULL,
+	individualid text NULL,
+	isactive bool NULL,
+	isextindicatorvisible bool NULL,
+	isprofilephotoactive bool NULL,
+	languagelocalekey text NULL,
+	lastlogindate text NULL,
+	lastmodifiedbyid text NULL,
+	lastmodifieddate text NULL,
+	lastname text NULL,
+	lastname_th__c text NULL,
+	lastpasswordchangedate text NULL,
+	lastreferenceddate text NULL,
+	lastvieweddate text NULL,
+	latitude text NULL,
+	localesidkey text NULL,
+	longitude text NULL,
+	managerid text NULL,
+	managername__c text NULL,
+	mediumbannerphotourl text NULL,
+	mediumphotourl text NULL,
+	mobilephone text NULL,
+	"name" text NULL,
+	numberoffailedlogins float8 NULL,
+	offlinepdatrialexpirationdate text NULL,
+	offlinetrialexpirationdate text NULL,
+	outofofficemessage text NULL,
+	phone text NULL,
+	postalcode text NULL,
+	profileid text NULL,
+	receivesadmininfoemails bool NULL,
+	receivesinfoemails bool NULL,
+	region__c text NULL,
+	senderemail text NULL,
+	sendername text NULL,
+	signature text NULL,
+	signature__c text NULL,
+	smallbannerphotourl text NULL,
+	smallphotourl text NULL,
+	state text NULL,
+	stayintouchnote text NULL,
+	stayintouchsignature text NULL,
+	stayintouchsubject text NULL,
+	street text NULL,
+	systemmodstamp text NULL,
+	timezonesidkey text NULL,
+	title text NULL,
+	userroleid text NULL,
+	usertype text NULL,
+	username text NULL,
+            CONSTRAINT %s_pkey PRIMARY KEY (%s)
+        );""" % (tb_to, primary_key)
+        # execute
+        with engine.connect() as conn:
+            conn.execute(strexec)
+            conn.close()
+    ###############################################################################
+    return result_state
+
+def ETL_process(**kwargs):
+
+    tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+    ########################################################################
+    c_columns = 0
+    # ETL ##################################################################
+    df = pd.read_parquet(tb_to + '.parquet')
+    ########################################################################
+    #df['st_adjustment_date'] = df['st_adjustment_date'].fillna('1999-01-01')
+    #df.pro_name = df.pro_name.str.replace(",", " ")
+    #df = df.drop_duplicates(subset=['pro_komcode'])
+    ########################################################################
+    ctable = "SELECT count(*) as c FROM information_schema.columns WHERE table_name = '%s';" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    c_columns = result.loc[0,'c']
+    ########################################################################
+    ctable = "SELECT count(*) as c FROM %s;" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    c_rows = result.loc[0,'c']
+    ########################################################################
+    print(f"DF (rows, col) :  {df.shape}")
+    if c_columns == df.shape[1]:
+        if c_rows > 0:
+            # execute
+            with engine.connect() as conn:
+                conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to))
+                strexec = """CREATE TABLE IF NOT EXISTS public.sf_user (
+	aboutme text NULL,
+	accountid text NULL,
+	alias text NULL,
+	badgetext text NULL,
+	bannerphotourl text NULL,
+	branch__c text NULL,
+	callcenterid text NULL,
+	city text NULL,
+	communitynickname text NULL,
+	companyname text NULL,
+	contactid text NULL,
+	country text NULL,
+	createdbyid text NULL,
+	createddate text NULL,
+	defaultgroupnotificationfrequency text NULL,
+	delegatedapproverid text NULL,
+	department text NULL,
+	digestfrequency text NULL,
+	division text NULL,
+	email text NULL,
+	emailencodingkey text NULL,
+	emailpreferencesautobcc bool NULL,
+	emailpreferencesautobccstayintouch bool NULL,
+	emailpreferencesstayintouchreminder bool NULL,
+	employeenumber text NULL,
+	"extension" text NULL,
+	fax text NULL,
+	federationidentifier text NULL,
+	firstname text NULL,
+	firstname_th__c text NULL,
+	forecastenabled bool NULL,
+	fullphotourl text NULL,
+	geocodeaccuracy text NULL,
+	id text NOT NULL,
+	individualid text NULL,
+	isactive bool NULL,
+	isextindicatorvisible bool NULL,
+	isprofilephotoactive bool NULL,
+	languagelocalekey text NULL,
+	lastlogindate text NULL,
+	lastmodifiedbyid text NULL,
+	lastmodifieddate text NULL,
+	lastname text NULL,
+	lastname_th__c text NULL,
+	lastpasswordchangedate text NULL,
+	lastreferenceddate text NULL,
+	lastvieweddate text NULL,
+	latitude text NULL,
+	localesidkey text NULL,
+	longitude text NULL,
+	managerid text NULL,
+	managername__c text NULL,
+	mediumbannerphotourl text NULL,
+	mediumphotourl text NULL,
+	mobilephone text NULL,
+	"name" text NULL,
+	numberoffailedlogins float8 NULL,
+	offlinepdatrialexpirationdate text NULL,
+	offlinetrialexpirationdate text NULL,
+	outofofficemessage text NULL,
+	phone text NULL,
+	postalcode text NULL,
+	profileid text NULL,
+	receivesadmininfoemails bool NULL,
+	receivesinfoemails bool NULL,
+	region__c text NULL,
+	senderemail text NULL,
+	sendername text NULL,
+	signature text NULL,
+	signature__c text NULL,
+	smallbannerphotourl text NULL,
+	smallphotourl text NULL,
+	state text NULL,
+	stayintouchnote text NULL,
+	stayintouchsignature text NULL,
+	stayintouchsubject text NULL,
+	street text NULL,
+	systemmodstamp text NULL,
+	timezonesidkey text NULL,
+	title text NULL,
+	userroleid text NULL,
+	usertype text NULL,
+	username text NULL,
+                CONSTRAINT %s_pkey PRIMARY KEY (%s)
+                );""" % (tb_to, primary_key)
+                conn.execute(strexec)
+                conn.close()
+        print(f"Save to Postgres {df.shape}")
+        try:
+            df.to_sql(tb_to, engine, index=False, if_exists='append')
+            del df
+            print("ETL Process finished")
+        except Exception as err:
+            raise ValueError(err)
+    else:
+        raise ValueError('New DATA Columns are not same of exiting tables') 
+    ########################################################################        
+    common.Del_File(**kwargs)
+    if os.path.exists(tb_to + ".parquet"):
+        os.remove(tb_to + '.parquet')
+    gc.collect()
+    return True
 
 def upsert(session, table, update_cols, rows):
 
@@ -135,16 +393,16 @@ def branch_func(ti):
         return "create_new_sf_user_table"
 
 with DAG(
-    'Salesforce_User_ETL_dag',
+    'Salesforce_User_ETLfromS3_dag',
     tags=['Salesforce'],
     schedule_interval=None,
-    #start_date=datetime(year=2022, month=6, day=1),
+    dagrun_timeout=timedelta(minutes=60),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
 
-    # 1. Check if the API is up
-    task_is_api_active = HttpSensor(
+    ################### Salesforce User ######################################################################################################
+    t1 = HttpSensor(
         task_id='is_api_active',
         http_conn_id='bks_api',
         endpoint='etl/sf/',
@@ -154,57 +412,37 @@ with DAG(
         mode="reschedule",
     )
 
-    # 2. Call API Salesforce Load to Datalaken Temp Table
-    task_Get_Salesforce_Data_Save_To_Datalake = SimpleHttpOperator(
+    t2 = SimpleHttpOperator(
         task_id='get_salesforce_user_object',
         http_conn_id='bks_api',
         method='POST',
         endpoint='etl/sf/sfuser',
-        data=json.dumps({"q": 0}),
-        headers={"Content-Type": "application/json"},
+        #data=json.dumps({"q": 0}),
+        #headers={"Content-Type": "application/json"},
         log_response=True
     )
+    t2.set_upstream(t1)
 
-    # 3. Upsert Salesforce To DATA Lake
-    task_L_DL_SF_user = PythonOperator(
-        task_id='upsert_sf_user_on_data_lake',
+    t3 = PythonOperator(
+        task_id='copy_sf_user_from_s3_data_lake',
         provide_context=True,
-        python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "sf_user", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        python_callable= common.copy_from_minio,
+        op_kwargs={'To_Table': "sf_user", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': "", 'Last_Days': 0}
     )
+    t3.set_upstream(t2)
 
-    # 4. Replace Salesforce Temp Table
-    task_RP_DL_SF_user = PythonOperator(
-        task_id='create_new_sf_user_table',
+    t4 = PythonOperator(
+        task_id='prepare_salesforce_user',
         provide_context=True,
-        python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "sf_user", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        python_callable= PP_process,
+        op_kwargs={'To_Table': "sf_user", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
     )
+    t4.set_upstream(t3)
 
-    # 5. Cleansing Salesforce Table
-    task_CL_DL_SF_user = PythonOperator(
-        task_id='cleansing_sf_user_data',
+    t5 = PythonOperator(
+        task_id='etl_sf_user_data_lake',
         provide_context=True,
-        python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sf_user", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        python_callable= ETL_process,
+        op_kwargs={'To_Table': "sf_user", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
     )
-
-    # 6. Check Exiting Salesforce Table
-    task_CK_DL_SF_user = PythonOperator(
-        task_id='check_exit_sf_user_data',
-        provide_context=True,
-        python_callable= Check_exiting,
-        op_kwargs={'To_Table': "sf_user", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
-    )
-
-    branch_op = BranchPythonOperator(
-        task_id="check_existing_sf_user_on_data_lake",
-        python_callable=branch_func,
-    )
-
-    branch_join = DummyOperator(
-        task_id='join',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
-
-    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_user >> branch_op >> [task_L_DL_SF_user, task_RP_DL_SF_user] >> branch_join >> task_CL_DL_SF_user
+    t5.set_upstream(t4)

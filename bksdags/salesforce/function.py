@@ -80,3 +80,11 @@ def get_Last_fisical_year():
         today = today.replace(year=y)
         today = today.replace(month=4)
     return today.strftime("%Y%m")
+
+def get_fisical_year():
+    today = datetime.date.today()
+    m = today.month
+    if (m < 4):
+        y = today.year - 1
+        today = today.replace(year=y)
+    return today.strftime("%Y")

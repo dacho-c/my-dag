@@ -420,7 +420,7 @@ def ETL_process(**kwargs):
             del df
             print("ETL Process finished")
         except Exception as err:
-            print(err)
+            raise ValueError(err)
     else:
         raise ValueError('New DATA Columns are not same of exiting tables') 
     ########################################################################        
@@ -588,7 +588,7 @@ with DAG(
     t4.set_upstream(t3)
 
     t5 = PythonOperator(
-        task_id='etl_kopen_stock_data_lake',
+        task_id='etl_sf_account_data_lake',
         provide_context=True,
         python_callable= ETL_process,
         op_kwargs={'To_Table': "sf_account", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}

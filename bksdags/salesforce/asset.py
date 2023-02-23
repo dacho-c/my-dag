@@ -9,6 +9,8 @@ from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.utils.edgemodifier import Label
 from airflow.utils.trigger_rule import TriggerRule
 
+import pyarrow.parquet as pq
+import pyarrow as pa
 import pandas as pd
 import sqlalchemy
 from sqlalchemy import Column, Integer, Date
@@ -20,9 +22,275 @@ from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.inspection import inspect
 import sys, os
+import gc
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
-#from function import get_yesterday
 from Class import common
+
+def PP_process(**kwargs):
+
+    tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+    ########################################################################
+    result_state = True
+    c_rows = 0
+    strexec = ''
+    # check exiting table
+    ctable = "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename  = '%s');" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    if result.loc[0,'exists']:
+        ctable = "SELECT count(*) as c FROM %s;" % (tb_to)
+        result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+        c_rows = result.loc[0,'c']
+        if os.path.exists(tb_to + ".parquet"):
+            table = pq.read_table(tb_to + ".parquet", columns=[])
+            print(table.num_rows)
+            if table.num_rows <= (c_rows * 0.8):
+                os.remove(tb_to + '.parquet')
+                result_state = False
+                del table
+                raise ValueError('New DATA ROWS are less then 80% of exiting tables') 
+    else:
+        strexec = """CREATE TABLE IF NOT EXISTS public.sf_asset (
+	att_hour__c text NULL,
+	att_ratio__c text NULL,
+	accountid text NULL,
+	assetid__c text NULL,
+	assetlevel int8 NULL,
+	assetprovidedbyid text NULL,
+	assetservicedbyid text NULL,
+	asset_status__c text NULL,
+	breaker_period__c text NULL,
+	contactid text NULL,
+	contract__c text NULL,
+	createdbyid text NULL,
+	createddate text NULL,
+	customerbranch__c text NULL,
+	customer_kopen_id__c text NULL,
+	deliverdate__c text NULL,
+	deliveryyear__c float8 NULL,
+	description text NULL,
+	enginemodel__c text NULL,
+	engineserial__c text NULL,
+	fuel_burn__c text NULL,
+	fullserial__c text NULL,
+	gcpsdate__c text NULL,
+	id text NOT NULL,
+	installdate text NULL,
+	iscompetitorproduct bool NULL,
+	isdeleted bool NULL,
+	isinternal bool NULL,
+	komtraxid__c text NULL,
+	lastmodifiedbyid text NULL,
+	lastmodifieddate text NULL,
+	lastreferenceddate text NULL,
+	lastvieweddate text NULL,
+	machinebranch__c text NULL,
+	machine_branch_code__c text NULL,
+	machine_brand__c text NULL,
+	machine_status__c text NULL,
+	machine_type__c text NULL,
+	migrate__c bool NULL,
+	model_serial_case__c text NULL,
+	model_serial__c text NULL,
+	model__c text NULL,
+	model_for_pssr__c text NULL,
+	"name" text NULL,
+	newused__c text NULL,
+	opportunity__c text NULL,
+	other_model__c text NULL,
+	ownerid text NULL,
+	parentid text NULL,
+	price text NULL,
+	product2id text NULL,
+	productcode text NULL,
+	purchasedate text NULL,
+	purchasedate__c text NULL,
+	quantity text NULL,
+	recordtypeid text NULL,
+	remark__c text NULL,
+	rootassetid text NULL,
+	smrdate__c text NULL,
+	smrsource__c text NULL,
+	salesroute__c text NULL,
+	search_key__c text NULL,
+	serialnumber text NULL,
+	servicedescription__c text NULL,
+	servicetype__c text NULL,
+	specification__c text NULL,
+	status text NULL,
+	stockkeepingunit text NULL,
+	systemmodstamp text NULL,
+	testdate__c text NULL,
+	travel_ratio__c text NULL,
+	travel_time__c text NULL,
+	usageenddate text NULL,
+	warrantyenddate__c text NULL,
+	workinghourf__c float8 NULL,
+	workinghour__c float8 NULL,
+	genopty12000machine__c bool NULL,
+	genopty12000__c bool NULL,
+	genopty7000__c bool NULL,
+	genoptyfuelburn_200000__c bool NULL,
+	genoptyfuelburn__c bool NULL,
+	genoptynosales1year_nopmcontract__c bool NULL,
+	genoptynosales1year__c bool NULL,
+	genoptysmr_7000_nosalesrecord2years__c bool NULL,
+	genoptysmr_7000_travalratio_10__c bool NULL,
+	genoptytravelratio__c bool NULL,
+	isupdated__c bool NULL,
+	lastoptynotify__c text NULL,
+            CONSTRAINT %s_pkey PRIMARY KEY (%s)
+        );""" % (tb_to, primary_key)
+        # execute
+        with engine.connect() as conn:
+            conn.execute(strexec)
+            conn.close()
+    ###############################################################################
+    return result_state
+
+def ETL_process(**kwargs):
+
+    tb_to = kwargs['To_Table']
+    primary_key = kwargs['Key']
+
+    dlstrcon = common.get_pg_connection('')
+    # Create SQLAlchemy engine
+    engine = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
+    ########################################################################
+    c_columns = 0
+    # ETL ##################################################################
+    df = pd.read_parquet(tb_to + '.parquet')
+    ########################################################################
+    #df['st_adjustment_date'] = df['st_adjustment_date'].fillna('1999-01-01')
+    #df.pro_name = df.pro_name.str.replace(",", " ")
+    #df = df.drop_duplicates(subset=['pro_komcode'])
+    ########################################################################
+    ctable = "SELECT count(*) as c FROM information_schema.columns WHERE table_name = '%s';" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    c_columns = result.loc[0,'c']
+    ########################################################################
+    ctable = "SELECT count(*) as c FROM %s;" % (tb_to)
+    result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
+    c_rows = result.loc[0,'c']
+    ########################################################################
+    print(f"DF (rows, col) :  {df.shape}")
+    if c_columns == df.shape[1]:
+        if c_rows > 0:
+            # execute
+            with engine.connect() as conn:
+                conn.execute("DROP TABLE IF EXISTS %s;" % (tb_to))
+                strexec = """CREATE TABLE IF NOT EXISTS public.sf_asset (
+	att_hour__c text NULL,
+	att_ratio__c text NULL,
+	accountid text NULL,
+	assetid__c text NULL,
+	assetlevel int8 NULL,
+	assetprovidedbyid text NULL,
+	assetservicedbyid text NULL,
+	asset_status__c text NULL,
+	breaker_period__c text NULL,
+	contactid text NULL,
+	contract__c text NULL,
+	createdbyid text NULL,
+	createddate text NULL,
+	customerbranch__c text NULL,
+	customer_kopen_id__c text NULL,
+	deliverdate__c text NULL,
+	deliveryyear__c float8 NULL,
+	description text NULL,
+	enginemodel__c text NULL,
+	engineserial__c text NULL,
+	fuel_burn__c text NULL,
+	fullserial__c text NULL,
+	gcpsdate__c text NULL,
+	id text NOT NULL,
+	installdate text NULL,
+	iscompetitorproduct bool NULL,
+	isdeleted bool NULL,
+	isinternal bool NULL,
+	komtraxid__c text NULL,
+	lastmodifiedbyid text NULL,
+	lastmodifieddate text NULL,
+	lastreferenceddate text NULL,
+	lastvieweddate text NULL,
+	machinebranch__c text NULL,
+	machine_branch_code__c text NULL,
+	machine_brand__c text NULL,
+	machine_status__c text NULL,
+	machine_type__c text NULL,
+	migrate__c bool NULL,
+	model_serial_case__c text NULL,
+	model_serial__c text NULL,
+	model__c text NULL,
+	model_for_pssr__c text NULL,
+	"name" text NULL,
+	newused__c text NULL,
+	opportunity__c text NULL,
+	other_model__c text NULL,
+	ownerid text NULL,
+	parentid text NULL,
+	price text NULL,
+	product2id text NULL,
+	productcode text NULL,
+	purchasedate text NULL,
+	purchasedate__c text NULL,
+	quantity text NULL,
+	recordtypeid text NULL,
+	remark__c text NULL,
+	rootassetid text NULL,
+	smrdate__c text NULL,
+	smrsource__c text NULL,
+	salesroute__c text NULL,
+	search_key__c text NULL,
+	serialnumber text NULL,
+	servicedescription__c text NULL,
+	servicetype__c text NULL,
+	specification__c text NULL,
+	status text NULL,
+	stockkeepingunit text NULL,
+	systemmodstamp text NULL,
+	testdate__c text NULL,
+	travel_ratio__c text NULL,
+	travel_time__c text NULL,
+	usageenddate text NULL,
+	warrantyenddate__c text NULL,
+	workinghourf__c float8 NULL,
+	workinghour__c float8 NULL,
+	genopty12000machine__c bool NULL,
+	genopty12000__c bool NULL,
+	genopty7000__c bool NULL,
+	genoptyfuelburn_200000__c bool NULL,
+	genoptyfuelburn__c bool NULL,
+	genoptynosales1year_nopmcontract__c bool NULL,
+	genoptynosales1year__c bool NULL,
+	genoptysmr_7000_nosalesrecord2years__c bool NULL,
+	genoptysmr_7000_travalratio_10__c bool NULL,
+	genoptytravelratio__c bool NULL,
+	isupdated__c bool NULL,
+	lastoptynotify__c text NULL,
+                CONSTRAINT %s_pkey PRIMARY KEY (%s)
+                );""" % (tb_to, primary_key)
+                conn.execute(strexec)
+                conn.close()
+        print(f"Save to Postgres {df.shape}")
+        try:
+            df.to_sql(tb_to, engine, index=False, if_exists='append')
+            del df
+            print("ETL Process finished")
+        except Exception as err:
+            raise ValueError(err)
+    else:
+        raise ValueError('New DATA Columns are not same of exiting tables') 
+    ########################################################################        
+    common.Del_File(**kwargs)
+    if os.path.exists(tb_to + ".parquet"):
+        os.remove(tb_to + '.parquet')
+    gc.collect()
+    return True
 
 def upsert(session, table, update_cols, rows):
 
@@ -135,16 +403,16 @@ def branch_func(ti):
         return "create_new_sf_asset_table"
 
 with DAG(
-    'Salesforce_Asset_ETL_dag',
+    'Salesforce_Asset_ETLfromS3_dag',
     tags=['Salesforce'],
     schedule_interval=None,
-    #start_date=datetime(year=2022, month=6, day=1),
+    dagrun_timeout=timedelta(minutes=60),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
 
-    # 1. Check if the API is up
-    task_is_api_active = HttpSensor(
+    ################### Salesforce Asset ######################################################################################################
+    t1 = HttpSensor(
         task_id='is_api_active',
         http_conn_id='bks_api',
         endpoint='etl/sf/',
@@ -154,57 +422,37 @@ with DAG(
         mode="reschedule",
     )
 
-    # 2. Call API Salesforce Load to Datalaken Temp Table
-    task_Get_Salesforce_Data_Save_To_Datalake = SimpleHttpOperator(
+    t2 = SimpleHttpOperator(
         task_id='get_salesforce_asset_object',
         http_conn_id='bks_api',
         method='POST',
         endpoint='etl/sf/sfasset',
-        data=json.dumps({"q": 0}),
-        headers={"Content-Type": "application/json"},
+        #data=json.dumps({"q": 0}),
+        #headers={"Content-Type": "application/json"},
         log_response=True
     )
+    t2.set_upstream(t1)
 
-    # 3. Upsert Salesforce To DATA Lake
-    task_L_DL_SF_asset = PythonOperator(
-        task_id='upsert_sf_asset_on_data_lake',
+    t3 = PythonOperator(
+        task_id='copy_sf_asset_from_s3_data_lake',
         provide_context=True,
-        python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "sf_asset", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        python_callable= common.copy_from_minio,
+        op_kwargs={'To_Table': "sf_asset", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': "", 'Last_Days': 0}
     )
+    t3.set_upstream(t2)
 
-    # 4. Replace Salesforce Temp Table
-    task_RP_DL_SF_asset = PythonOperator(
-        task_id='create_new_sf_asset_table',
+    t4 = PythonOperator(
+        task_id='prepare_salesforce_asset',
         provide_context=True,
-        python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "sf_asset", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        python_callable= PP_process,
+        op_kwargs={'To_Table': "sf_asset", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
     )
+    t4.set_upstream(t3)
 
-    # 5. Cleansing Salesforce Table
-    task_CL_DL_SF_asset = PythonOperator(
-        task_id='cleansing_sf_asset_data',
+    t5 = PythonOperator(
+        task_id='etl_sf_asset_data_lake',
         provide_context=True,
-        python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sf_asset", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
+        python_callable= ETL_process,
+        op_kwargs={'To_Table': "sf_asset", 'Chunk_Size': 50000, 'Key': 'id', 'Condition': ""}
     )
-
-    # 6. Check Exiting Salesforce Table
-    task_CK_DL_SF_asset = PythonOperator(
-        task_id='check_exit_sf_asset_data',
-        provide_context=True,
-        python_callable= Check_exiting,
-        op_kwargs={'To_Table': "sf_asset", 'Chunk_Size': 5000, 'Key': 'id', 'Condition': ""}
-    )
-
-    branch_op = BranchPythonOperator(
-        task_id="check_existing_sf_asset_on_data_lake",
-        python_callable=branch_func,
-    )
-
-    branch_join = DummyOperator(
-        task_id='join',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
-
-    task_is_api_active >> task_Get_Salesforce_Data_Save_To_Datalake >> task_CK_DL_SF_asset >> branch_op >> [task_L_DL_SF_asset, task_RP_DL_SF_asset] >> branch_join >> task_CL_DL_SF_asset
+    t5.set_upstream(t4)

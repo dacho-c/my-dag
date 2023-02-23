@@ -21,7 +21,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import gc
 import os, glob
-from function import get_today, get_lastday
+from function import get_today, get_lastday, get_fisical_year
 
 class common(object):
 
@@ -99,7 +99,10 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fget_object("datalake",get_lastday(ld) + '-' + targetfile,'/opt/airflow/' + targetfile )
+        if ld == 365:
+            client.fget_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+        else:
+            client.fget_object("datalake",get_lastday(ld) + '-' + targetfile,'/opt/airflow/' + targetfile )
         return True
     
     def copy_to_minio_sl(**kwargs):
@@ -126,7 +129,10 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fget_object("datalake",get_lastday(ld) + '-' + targetfile,'/opt/airflow/' + targetfile )
+        if ld == 365:
+            client.fget_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+        else:
+            client.fget_object("datalake",get_lastday(ld) + '-' + targetfile,'/opt/airflow/' + targetfile )
         return True
 
     def Del_File(**kwargs):

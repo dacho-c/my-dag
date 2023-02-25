@@ -437,8 +437,8 @@ with DAG(
         http_conn_id='bks_api',
         method='POST',
         endpoint='etl/sf/sfquote',
-        data=json.dumps({"fy": get_fisical_year()}),
-        headers={"Content-Type": "application/json"},
+        data="fy=" + get_fisical_year(),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         log_response=True
     )
     t2.set_upstream(t1)

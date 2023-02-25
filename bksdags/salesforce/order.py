@@ -358,9 +358,7 @@ with DAG(
         task_id='get_salesforce_order_object',
         http_conn_id='bks_api',
         method='POST',
-        endpoint='etl/sf/sforder',
-        data="fy=" + get_fisical_year(),
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        endpoint='etl/sf/sforder?fy=' + get_fisical_year(),
         log_response=True
     )
     t2.set_upstream(t1)

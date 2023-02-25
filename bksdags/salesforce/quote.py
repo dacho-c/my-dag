@@ -436,9 +436,7 @@ with DAG(
         task_id='get_salesforce_quote_object',
         http_conn_id='bks_api',
         method='POST',
-        endpoint='etl/sf/sfquote',
-        data="fy=" + get_fisical_year(),
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        endpoint='etl/sf/sfquote?fy=' + get_fisical_year(),
         log_response=True
     )
     t2.set_upstream(t1)

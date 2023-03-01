@@ -26,7 +26,7 @@ from pgsql_stockendmonth import sql_ETL_stockendmonth
 
 def ETL_process(**kwargs):
 
-    whstrcon = common.get_wh_connection('')
+    whstrcon = common.get_dl_connection('')
     dlstrcon = common.get_dl_connection('')
     # Create SQLAlchemy engine
     engine_dl = sqlalchemy.create_engine(dlstrcon,client_encoding="utf8")
@@ -76,7 +76,7 @@ def upsert(session, table, update_cols, rows):
 
 def UPSERT_process(**kwargs):
     
-    whstrcon = common.get_wh_connection('')
+    whstrcon = common.get_dl_connection('')
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
     # Start Session
@@ -113,7 +113,7 @@ def UPSERT_process(**kwargs):
 
 def INSERT_bluk(**kwargs):
     
-    whstrcon = common.get_wh_connection('')
+    whstrcon = common.get_dl_connection('')
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
 
@@ -130,7 +130,7 @@ def INSERT_bluk(**kwargs):
 
 def Cleansing_process(**kwargs):
     
-    whstrcon = common.get_wh_connection('')
+    whstrcon = common.get_dl_connection('')
     # Create SQLAlchemy engine
     engine = sqlalchemy.create_engine(whstrcon,client_encoding="utf8")
 

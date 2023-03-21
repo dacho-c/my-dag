@@ -127,7 +127,7 @@ def ETL_process(**kwargs):
         if c_columns == df.shape[1]:
             # execute
             with engine.connect() as conn:
-                conn.execute("DELETE %s %s;" % (tb_to, C_condition))
+                conn.execute("DELETE FROM public.%s %s;" % (tb_to, C_condition))
                 conn.close()
         else:
             raise ValueError('New DATA Columns are not same of exiting tables') 

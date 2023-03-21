@@ -75,6 +75,7 @@ def PP_process(**kwargs):
             #table = pq.read_table(tb_to + ".parquet", columns=[])
             ds_parquet = pq.ParquetDataset(
                 '/opt/airflow/' + tb_to + '.parquet',
+                validate_schema=False,
                 filters=[('psh_account_month','>=', '202204')]
             )
             table = ds_parquet.read(columns=columns_part_sale_head())

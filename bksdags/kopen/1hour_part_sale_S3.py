@@ -74,7 +74,7 @@ def PP_process(**kwargs):
         if os.path.exists(tb_to + ".parquet"):
             #table = pq.read_table(tb_to + ".parquet", columns=[])
             ds_parquet = pq.ParquetDataset(
-                tb_to + '.parquet',
+                '/opt/airflow/' + tb_to + '.parquet',
                 filters=[('psh_account_month','>=', get_first_ym_fisical_year())]
             )
             table = ds_parquet.read(columns=columns_part_sale_head())
@@ -104,7 +104,7 @@ def ETL_process(**kwargs):
     # ETL ##################################################################
     #df = pd.read_parquet(tb_to + '.parquet')
     ds_parquet = pq.ParquetDataset(
-                tb_to + '.parquet',
+                '/opt/airflow/' + tb_to + '.parquet',
                 filters=[('psh_account_month','>=', get_first_ym_fisical_year())]
             )
     table = ds_parquet.read(columns=columns_part_sale_head())

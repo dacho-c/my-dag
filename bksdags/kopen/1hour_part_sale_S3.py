@@ -72,13 +72,14 @@ def PP_process(**kwargs):
         result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
         c_rows = result.loc[0,'c']
         if os.path.exists(tb_to + ".parquet"):
-            #table = pq.read_table(tb_to + ".parquet", columns=[])
-            ds_parquet = pq.ParquetDataset(
-                '/opt/airflow/' + tb_to + '.parquet',
-                validate_schema=False,
-                filters=[('psh_account_month','>=', '202204')]
-            )
-            table = ds_parquet.read(columns=columns_part_sale_head())
+            table = pq.read_table(tb_to + ".parquet", columns=columns_part_sale_head())
+            #df_parquet = pd.read_parquet('.parquet', columns=col)
+            #ds_parquet = pq.ParquetDataset(
+                #'/opt/airflow/' + tb_to + '.parquet',
+                #validate_schema=False,
+                #filters=[('psh_account_month','>=', '202204')]
+            #)
+            #table = ds_parquet.read(columns=columns_part_sale_head())
             print(table.num_rows)
             if table.num_rows <= (c_rows * 0.9):
                 os.remove(tb_to + '.parquet')
@@ -103,13 +104,13 @@ def ETL_process(**kwargs):
     ########################################################################
     c_columns = 0
     # ETL ##################################################################
-    #df = pd.read_parquet(tb_to + '.parquet')
-    ds_parquet = pq.ParquetDataset(
-                '/opt/airflow/' + tb_to + '.parquet',
-                filters=[('psh_account_month','>=', get_first_ym_fisical_year())]
-            )
-    table = ds_parquet.read(columns=columns_part_sale_head())
-    df = table.to_pandas()
+    df = pd.read_parquet(tb_to + '.parquet',columns=columns_part_sale_head())
+    #ds_parquet = pq.ParquetDataset(
+                #'/opt/airflow/' + tb_to + '.parquet',
+               # filters=[('psh_account_month','>=', get_first_ym_fisical_year())]
+           # )
+    #table = ds_parquet.read(columns=columns_part_sale_head())
+    #df = table.to_pandas()
     ########################################################################
     #df.pro_name = df.pro_name.str.replace(",", " ")
     #df = df.drop_duplicates(subset=['pro_komcode'])

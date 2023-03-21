@@ -5,7 +5,6 @@ from airflow.models import DAG
 from airflow.operators.python import PythonOperator
 from airflow import AirflowException
 #from airflow.utils.trigger_rule import TriggerRule
-import pandas as pd
 import sys, os
 import gc
 import pyarrow.parquet as pq
@@ -76,6 +75,9 @@ def PP_process(**kwargs):
                 result_state = False
                 del table
                 raise ValueError('New DATA ROWS are less then 80% of exiting tables') 
+        else:
+            result_state = False
+            raise ValueError('Not exiting Parquet files') 
     else:
         strexec = """CREATE TABLE IF NOT EXISTS public.kp_part
             (

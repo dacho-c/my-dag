@@ -55,6 +55,9 @@ def PP_process(**kwargs):
                 result_state = False
                 del table
                 raise ValueError('New DATA ROWS are less then 80% of exiting tables') 
+        else:
+            result_state = False
+            raise ValueError('Not exiting Parquet files') 
     else:
         strexec = """CREATE TABLE IF NOT EXISTS public.sf_order (
 	        accountid text NULL,

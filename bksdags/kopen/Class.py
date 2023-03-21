@@ -10,7 +10,7 @@ from io import StringIO
 import time
 import pandas as pd
 import pyarrow.parquet as pq
-#import pyarrow as pa
+import pyarrow as pa
 import configparser
 from sqlalchemy import create_engine, delete
 #import datetime
@@ -161,6 +161,15 @@ class common(object):
                     writer.write_table(f)
         except Exception as e:
             print(e)
+
+    def toparquet(df,dir,my_schema):
+        # Load to DB-LAKE not transfrom
+        if my_schema == '':
+            table = pa.Table.from_pandas(df)
+        else:
+            table = pa.Table.from_pandas(df, schema=my_schema, preserve_index=False)
+        pq.write_to_dataset(table ,root_path='/opt/airflow/' + dir)
+        pq.ParquetDataset('/opt/airflow/' + dir + '/', use_legacy_dataset=False).files
 
     # Define a function that handles and parses psycopg2 exceptions
     def show_psycopg2_exception(err):

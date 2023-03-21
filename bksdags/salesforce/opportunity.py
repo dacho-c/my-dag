@@ -555,9 +555,7 @@ with DAG(
         task_id='get_salesforce_opportunity_object',
         http_conn_id='bks_api',
         method='POST',
-        endpoint='etl/sf/sfopportunity',
-        data=json.dumps({"fy": get_fisical_year()}),
-        headers={"Content-Type": "application/json"},
+        endpoint='etl/sf/sfopportunity?fy=' + get_fisical_year(),
         log_response=True
     )
     t2.set_upstream(t1)

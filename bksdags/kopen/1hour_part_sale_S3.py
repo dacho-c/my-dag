@@ -38,7 +38,7 @@ def EL_process(**kwargs):
     my_schema = schema_part_sale_head()
     rows = 0
 
-    sqlstr = sql_part_sale_head() + tb_from + C_condition
+    sqlstr = sql_part_sale_head() + C_condition
 
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)

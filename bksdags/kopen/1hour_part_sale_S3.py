@@ -39,14 +39,12 @@ def EL_process(**kwargs):
     rows = 0
     fy = get_fisical_year()
     fy1 = (int(fy) + 1)
-    if tb_from == 'PART_SALES_HEAD':
+    if tb_from == 'PART_SALE_HEAD':
         sqlstr = sql_part_sale_head(fy,fy1) + C_condition
     else:
         sqlstr = sql_part_sale_detail(fy,fy1) + C_condition
-    print(sqlstr)
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)
-        print(rows)
         # Load to DB-LAKE not transfrom
         common.toparquet(chunk_df,tb_to,my_schema)
         print(f"Save to Airflow storage {rows} rows")
@@ -78,7 +76,7 @@ def PP_process(**kwargs):
         result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
         c_rows = result.loc[0,'c']
         if os.path.exists(tb_to + ".parquet"):
-            if tb_from == 'PART_SALES_HEAD':
+            if tb_from == 'PART_SALE_HEAD':
                 table = pq.read_table(tb_to + ".parquet", columns=columns_part_sale_head())
             else:
                 table = pq.read_table(tb_to + ".parquet", columns=columns_part_sale_detail())
@@ -114,7 +112,7 @@ def ETL_process(**kwargs):
     ########################################################################
     c_columns = 0
     # ETL ##################################################################
-    if tb_from == 'PART_SALES_HEAD':
+    if tb_from == 'PART_SALE_HEAD':
         df = pd.read_parquet(tb_to + '.parquet',columns=columns_part_sale_head())
         strexec = sql_create_part_sale_head(tb_to, primary_key)
     else:

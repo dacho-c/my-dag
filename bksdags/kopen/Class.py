@@ -86,8 +86,11 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
-        client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
+        if ld == 365:
+            client.fget_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+        else:
+            client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
+            client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
         return True
 
     def copy_from_minio(**kwargs):
@@ -116,8 +119,11 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
-        client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
+        if ld == 365:
+            client.fget_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+        else:
+            client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
+            client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
         return True
 
     def copy_from_minio_sl(**kwargs):

@@ -16,7 +16,7 @@ import sqlalchemy
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
 from function import get_fisical_year
-from sql import sql_part_sale_head, schema_part_sale_head, columns_part_sale_head
+from sql import sql_part_sale_head, sql_create_part_sale_head, schema_part_sale_head, columns_part_sale_head, sql_part_sale_detail, sql_create_part_sale_detail, schema_part_sale_detail, columns_part_sale_detail
 
 def EL_process(**kwargs):
 
@@ -39,7 +39,10 @@ def EL_process(**kwargs):
     rows = 0
     fy = get_fisical_year()
     fy1 = (int(fy) + 1)
-    sqlstr = sql_part_sale_head(fy,fy1) + C_condition
+    if tb_from == 'PART_SALES_HEAD':
+        sqlstr = sql_part_sale_head(fy,fy1) + C_condition
+    else:
+        sqlstr = sql_part_sale_detail(fy,fy1) + C_condition
 
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)
@@ -56,6 +59,7 @@ def EL_process(**kwargs):
 
 def PP_process(**kwargs):
 
+    tb_from = kwargs['From_Table']
     tb_to = kwargs['To_Table']
     C_condition = kwargs['Condition']
 
@@ -73,7 +77,10 @@ def PP_process(**kwargs):
         result = pd.read_sql_query(sql=sqlalchemy.text(ctable), con=engine)
         c_rows = result.loc[0,'c']
         if os.path.exists(tb_to + ".parquet"):
-            table = pq.read_table(tb_to + ".parquet", columns=columns_part_sale_head())
+            if tb_from == 'PART_SALES_HEAD':
+                table = pq.read_table(tb_to + ".parquet", columns=columns_part_sale_head())
+            else:
+                table = pq.read_table(tb_to + ".parquet", columns=columns_part_sale_detail())
             #df_parquet = pd.read_parquet('.parquet', columns=col)
             #ds_parquet = pq.ParquetDataset(
                 #'/opt/airflow/' + tb_to + '.parquet',
@@ -95,6 +102,7 @@ def PP_process(**kwargs):
 
 def ETL_process(**kwargs):
 
+    tb_from = kwargs['From_Table']
     tb_to = kwargs['To_Table']
     primary_key = kwargs['Key']
     C_condition = kwargs['Condition']
@@ -105,7 +113,12 @@ def ETL_process(**kwargs):
     ########################################################################
     c_columns = 0
     # ETL ##################################################################
-    df = pd.read_parquet(tb_to + '.parquet',columns=columns_part_sale_head())
+    if tb_from == 'PART_SALES_HEAD':
+        df = pd.read_parquet(tb_to + '.parquet',columns=columns_part_sale_head())
+        strexec = sql_create_part_sale_head(tb_to, primary_key)
+    else:
+        df = pd.read_parquet(tb_to + '.parquet',columns=columns_part_sale_detail())
+        strexec = sql_create_part_sale_detail(tb_to, primary_key)
     #ds_parquet = pq.ParquetDataset(
                 #'/opt/airflow/' + tb_to + '.parquet',
                # filters=[('psh_account_month','>=', get_first_ym_fisical_year())]
@@ -135,56 +148,8 @@ def ETL_process(**kwargs):
     else:
         # execute
         with engine.connect() as conn:
-            strexec = """CREATE TABLE IF NOT EXISTS public.kp_part_sale_head (
-	            psh_ticket_id text NULL,
-	            psh_s_tktid text NULL,
-	            psh_org_id text NULL,
-	            psh_dep_id text NULL,
-	            psh_finance_date date NULL,
-	            psh_account_month text NULL,
-	            psh_wh_id text NULL,
-	            psh_cus_id text NULL,
-	            psh_valid_date date NULL,
-	            psh_out_taxrate float8 NULL,
-	            psh_discount float8 NULL,
-	            psh_wh_tktid text NULL,
-	            psh_wh_status text NULL,
-	            psh_rec_date date NULL,
-	            psh_passed text NULL,
-	            psh_is_pur text NULL,
-	            psh_remark text NULL,
-	            psh_creater_id text NULL,
-	            psh_create_date timestamp NULL,
-	            psh_checker_id text NULL,
-	            psh_check_date timestamp NULL,
-	            psh_lastuserid text NULL,
-	            psh_lasttime timestamp NULL,
-	            psh_status text NULL,
-	            psh_pay_day date NULL,
-	            psh_sales text NULL,
-	            psh_old_ticket_id text NULL,
-	            psh_old_ticketid text NULL,
-	            psh_invcus text NULL,
-	            psh_is_int text NULL,
-	            psh_pz_type text NULL,
-	            psh_sale_type text NULL,
-	            psh_unit_model text NULL,
-	            psh_unit_id text NULL,
-	            psh_currency text NULL,
-	            psh_exchange_rate float8 NULL,
-	            psh_basic_ttlmoney float8 NULL,
-	            psh_basic_ttlamount float8 NULL,
-	            psh_basic_ttltax float8 NULL,
-	            psh_order_type text NULL,
-	            psh_lp_info text NULL,
-	            psh_pay_terms text NULL,
-	            psh_usance_days int8 NULL,
-	            psh_credit_type text NULL,
-	            psh_ttltax_new float8 NULL,
-                CONSTRAINT %s_pkey PRIMARY KEY (%s)
-            );""" % (tb_to, primary_key)
-        conn.execute(strexec)
-        conn.close()
+            conn.execute(strexec)
+            conn.close()
     ########################################################################        
     print(f"Save to Postgres {df.shape}")
     try:
@@ -257,4 +222,45 @@ with DAG(
         op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
     )
     t5.set_upstream(t4)
+
+    ################### Part_Sales Detail #############################################################################################################
+    t6 = PythonOperator(
+        task_id='el_kopen_part_sale_detail_data',
+        provide_context=True,
+        python_callable=EL_process,
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': ""}
+    )
+    t6.set_upstream(t5)
+
+    t7 = PythonOperator(
+        task_id='prepare_kopen_part_sale_detail_data',
+        provide_context=True,
+        python_callable=PP_process,
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+    )
+    t7.set_upstream(t6)
+
+    t8 = PythonOperator(
+        task_id='copy_part_sale_detail_to_s3_data_lake',
+        provide_context=True,
+        python_callable= common.copy_to_minio,
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': "", 'Last_Days': 365}
+    )
+    t8.set_upstream(t7)
+
+    t9 = PythonOperator(
+        task_id='copy_part_sale_detail_to_s3sl_data_lake',
+        provide_context=True,
+        python_callable= common.copy_to_minio_sl,
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': "", 'Last_Days': 365}
+    )
+    t9.set_upstream(t8)
+
+    t10 = PythonOperator(
+        task_id='etl_kopen_part_sale_detail_data_lake',
+        provide_context=True,
+        python_callable= ETL_process,
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+    )
+    t10.set_upstream(t9)
 

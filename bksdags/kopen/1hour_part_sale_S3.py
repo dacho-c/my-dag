@@ -15,7 +15,7 @@ import sqlalchemy
 
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
-from function import get_first_ym_fisical_year
+from function import get_fisical_year
 from sql import sql_part_sale_head, schema_part_sale_head, columns_part_sale_head
 
 def EL_process(**kwargs):
@@ -37,8 +37,9 @@ def EL_process(**kwargs):
 
     my_schema = schema_part_sale_head()
     rows = 0
-
-    sqlstr = sql_part_sale_head() + C_condition
+    fy = get_fisical_year()
+    fy1 = (int(fy) + 1)
+    sqlstr = sql_part_sale_head(fy,fy1) + C_condition
 
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)
@@ -222,14 +223,14 @@ with DAG(
         task_id='el_kopen_part_sale_data',
         provide_context=True,
         python_callable=EL_process,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where psh_account_month >= '%s'" % (get_first_ym_fisical_year())}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': ""}
     )
 
     t2 = PythonOperator(
         task_id='prepare_kopen_part_sale_data',
         provide_context=True,
         python_callable=PP_process,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where psh_account_month >= '%s'" % (get_first_ym_fisical_year())}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) >= '%s'" % (get_fisical_year())}
     )
     t2.set_upstream(t1)
 
@@ -253,7 +254,7 @@ with DAG(
         task_id='etl_kopen_part_sale_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where psh_account_month >= '%s'" % (get_first_ym_fisical_year())}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) >= '%s'" % (get_fisical_year())}
     )
     t5.set_upstream(t4)
 

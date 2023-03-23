@@ -43,9 +43,10 @@ def EL_process(**kwargs):
         sqlstr = sql_part_sale_head(fy,fy1) + C_condition
     else:
         sqlstr = sql_part_sale_detail(fy,fy1) + C_condition
-
+    print(sqlstr)
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)
+        print(rows)
         # Load to DB-LAKE not transfrom
         common.toparquet(chunk_df,tb_to,my_schema)
         print(f"Save to Airflow storage {rows} rows")

@@ -35,14 +35,15 @@ def EL_process(**kwargs):
     
     common.Del_File(**kwargs)
 
-    my_schema = schema_part_sale_head()
     rows = 0
     fy = get_fisical_year()
     fy1 = (int(fy) + 1)
     if tb_from == 'PART_SALE_HEAD':
         sqlstr = sql_part_sale_head(fy,fy1) + C_condition
+        my_schema = schema_part_sale_head()
     else:
         sqlstr = sql_part_sale_detail(fy,fy1) + C_condition
+        my_schema = schema_part_sale_detail()
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)
         # Load to DB-LAKE not transfrom

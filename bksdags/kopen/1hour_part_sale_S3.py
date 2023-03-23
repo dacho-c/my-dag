@@ -230,7 +230,7 @@ with DAG(
         task_id='prepare_kopen_part_sale_data',
         provide_context=True,
         python_callable=PP_process,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) >= '%s'" % (get_fisical_year())}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
     )
     t2.set_upstream(t1)
 
@@ -254,7 +254,7 @@ with DAG(
         task_id='etl_kopen_part_sale_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) >= '%s'" % (get_fisical_year())}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
     )
     t5.set_upstream(t4)
 

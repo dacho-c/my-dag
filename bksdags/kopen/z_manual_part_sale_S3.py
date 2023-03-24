@@ -176,7 +176,7 @@ def ETL_process(**kwargs):
     return True
 
 with DAG(
-    'Kopen_Part_sale_1Hour_db2pgS3_dag',
+    'Z_Kopen_Part_sale_History_db2pgS3_dag',
     schedule_interval=None,
     dagrun_timeout=timedelta(minutes=60),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),

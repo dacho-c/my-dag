@@ -341,6 +341,7 @@ def schema_part_sale_detail():
         pa.field('psd_guidelines',pa.string()),
         pa.field('psd_lp_amount',pa.float64()),
         pa.field('psd_promotion_code',pa.string()),
+        pa.field('psh_account_month',pa.string()),
     ])
 
 def columns_part_sale_detail():

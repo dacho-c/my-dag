@@ -177,7 +177,9 @@ def ETL_process(**kwargs):
                 n = math.ceil(rows / 20000)
             for i in range(n):
                 r0 = i * 20000
-                r1 = ((i + 1) * 20000) - 1
+                if i > 0:
+                    r0 = r0 + 1
+                r1 = ((i + 1) * 20000)
                 df_1 = df.iloc[r0:r1,:]
                 df_1.to_sql(tb_to, engine, index=False, if_exists='append')
                 print(f"ETL Process Loop : {i} Rows : {df_1.shape[0]}")

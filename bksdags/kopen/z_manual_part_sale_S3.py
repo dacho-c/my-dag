@@ -15,7 +15,7 @@ import sqlalchemy
 
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
-from function import get_fisical_year
+#from function import get_fisical_year
 from sql import sql_part_sale_head, sql_create_part_sale_head, schema_part_sale_head, columns_part_sale_head, sql_part_sale_detail, sql_create_part_sale_detail, schema_part_sale_detail, columns_part_sale_detail
 
 def EL_process(**kwargs):
@@ -36,8 +36,8 @@ def EL_process(**kwargs):
     common.Del_File(**kwargs)
 
     rows = 0
-    fy = get_fisical_year()
-    fy1 = (int(fy) + 1)
+    fy = common.get_history_fy('')
+    fy1 = ''
     if tb_from == 'PART_SALE_HEAD':
         sqlstr = sql_part_sale_head(fy,fy1) + C_condition
         my_schema = schema_part_sale_head()
@@ -195,7 +195,7 @@ with DAG(
         task_id='prepare_kopen_part_sale_data',
         provide_context=True,
         python_callable=PP_process,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
     )
     t2.set_upstream(t1)
 
@@ -203,7 +203,7 @@ with DAG(
         task_id='copy_part_sale_to_s3_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': "", 'Last_Days': 365, 'FY': ''}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
     )
     t3.set_upstream(t2)
 
@@ -211,7 +211,7 @@ with DAG(
         task_id='copy_part_sale_to_s3sl_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio_sl,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': "", 'Last_Days': 365, 'FY': ''}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
     )
     t4.set_upstream(t3)
 
@@ -219,7 +219,7 @@ with DAG(
         task_id='etl_kopen_part_sale_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+        op_kwargs={'From_Table': "PART_SALE_HEAD", 'To_Table': "kp_part_sale_head", 'Chunk_Size': 50000, 'Key': 'psh_ticket_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
     )
     t5.set_upstream(t4)
 
@@ -236,7 +236,7 @@ with DAG(
         task_id='prepare_kopen_part_sale_detail_data',
         provide_context=True,
         python_callable=PP_process,
-        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
     )
     t7.set_upstream(t6)
 
@@ -244,7 +244,7 @@ with DAG(
         task_id='copy_part_sale_detail_to_s3_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio,
-        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': "", 'Last_Days': 365, 'FY': ''}
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
     )
     t8.set_upstream(t7)
 
@@ -252,7 +252,7 @@ with DAG(
         task_id='copy_part_sale_detail_to_s3sl_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio_sl,
-        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': "", 'Last_Days': 365, 'FY': ''}
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
     )
     t9.set_upstream(t8)
 
@@ -260,7 +260,7 @@ with DAG(
         task_id='etl_kopen_part_sale_detail_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+        op_kwargs={'From_Table': "PART_SALE_DETAIL", 'To_Table': "kp_part_sale_detail", 'Chunk_Size': 50000, 'Key': 'item_id', 'Condition': " where left(psh_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
     )
     t10.set_upstream(t9)
 

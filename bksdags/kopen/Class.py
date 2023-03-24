@@ -50,6 +50,9 @@ class common(object):
         db2strcon = "db2://%s:%s@%s:%s/%s" % (db2uid, db2pwd, db2host, db2port, db2database)
         return db2strcon
     
+    def get_history_fy(self):
+        return Variable.get('historyfy')
+
     def get_mailto(self):
         return Variable.get('mailto')
     
@@ -79,6 +82,7 @@ class common(object):
     def copy_to_minio(**kwargs):
         tb_to = kwargs['To_Table']
         ld = kwargs['Last_Days']
+        fy = kwargs['FY']
         targetfile = tb_to + '.parquet'
         s3_endpoint = Variable.get('s3_endpoint')
         s3_access_key = Variable.get('s3_access_key')
@@ -86,11 +90,14 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        if ld == 365:
-            client.fput_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+        if ld == 366:
+            client.fput_object("datalake",fy + '-' + targetfile,'/opt/airflow/' + targetfile )
         else:
-            client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
-            client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
+            if ld == 365:
+                client.fput_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+            else:
+                client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
+                client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
         return True
 
     def copy_from_minio(**kwargs):
@@ -112,6 +119,7 @@ class common(object):
     def copy_to_minio_sl(**kwargs):
         tb_to = kwargs['To_Table']
         ld = kwargs['Last_Days']
+        fy = kwargs['FY']
         targetfile = tb_to + '.parquet'
         s3_endpoint = Variable.get('s3_endpoint_bp')
         s3_access_key = Variable.get('s3_access_key')
@@ -119,11 +127,14 @@ class common(object):
         # Create the client
         client = minio.Minio(endpoint=s3_endpoint,access_key=s3_access_key,secret_key=s3_secret_key,secure=False)
         # Put the object into minio
-        if ld == 365:
-            client.fput_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+        if ld == 366:
+            client.fput_object("datalake",fy + '-' + targetfile,'/opt/airflow/' + targetfile )
         else:
-            client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
-            client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
+            if ld == 365:
+                client.fput_object("datalake",get_fisical_year() + '-' + targetfile,'/opt/airflow/' + targetfile )
+            else:
+                client.fput_object("datalake",get_today() + '-' + targetfile,'/opt/airflow/' + targetfile)
+                client.remove_object("datalake",get_lastday(ld) + '-' + targetfile)
         return True
 
     def copy_from_minio_sl(**kwargs):

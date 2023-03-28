@@ -99,7 +99,7 @@ def ETL_process(**kwargs):
     ########################################################################
     c_columns = 0
     # ETL ##################################################################
-    df = pd.read_parquet(tb_to + '.parquet',columns=[])
+    df = pd.read_parquet(tb_to + '.parquet')
     strexec = sql_create_service_job(tb_to, primary_key)
     ########################################################################
     #df.pro_name = df.pro_name.str.replace(",", " ")

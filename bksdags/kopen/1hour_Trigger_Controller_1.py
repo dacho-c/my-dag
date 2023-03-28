@@ -88,12 +88,19 @@ with DAG(
     )
     t6.set_upstream(t5)
 
+    t7 = TriggerDagRunOperator(
+        task_id="trigger_Part_Sale_S3_dag",
+        trigger_dag_id="Kopen_Part_sale_1Hour_db2pgS3_dag",
+        wait_for_completion=True
+    )
+    t7.set_upstream(t6)
+
     t_end = PythonOperator(
         task_id='end_task',
         python_callable=print_task_type,
         op_kwargs={'task_type': 'ending'}
     )
-    t_end.set_upstream(t6)
+    t_end.set_upstream(t7)
 
     AllTaskSuccess = PythonOperator(
         trigger_rule=TriggerRule.ALL_SUCCESS,

@@ -76,7 +76,7 @@ with DAG(
 
     t5 = TriggerDagRunOperator(
         task_id="trigger_Service_job_dag",
-        trigger_dag_id="Kopen_Service_job_db2postgres_dag",
+        trigger_dag_id="Kopen_Service_job_db2pgS3_dag",
         wait_for_completion=True
     )
     t5.set_upstream(t4)
@@ -108,7 +108,7 @@ with DAG(
         python_callable=common.send_mail,
         op_kwargs={'mtype': 'success', 'msubject': 'ETL AllTaskSuccess 07.00 (Hourly)', 'text': 'AllTaskSuccess 07.00 (Hourly Kopen) Quotation, Internal Supply, Part Picking, Invoice, Service Job, Stock'}
     )
-    AllTaskSuccess.set_upstream([t_start,t1,t2,t3,t4,t5,t6,t_end])
+    AllTaskSuccess.set_upstream([t_start,t1,t2,t3,t4,t5,t6,t7,t_end])
     
     t1Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
@@ -157,3 +157,11 @@ with DAG(
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Stock Task Error 07.00 (Hourly)', 'text': 'Stock Task Error 07.00 (Hourly)'}
     )
     t6Failed.set_upstream([t6])
+
+    t7Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t7Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Part Sale Task Error 07.00 (Hourly)', 'text': 'Part Sale Task Error 07.00 (Hourly)'}
+    )
+    t7Failed.set_upstream([t7])

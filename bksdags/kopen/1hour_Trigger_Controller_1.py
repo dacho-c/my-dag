@@ -75,7 +75,7 @@ with DAG(
     t4.set_upstream(t3)
 
     t5 = TriggerDagRunOperator(
-        task_id="trigger_Service_job_dag",
+        task_id="trigger_Service_job_S3_dag",
         trigger_dag_id="Kopen_Service_job_db2pgS3_dag",
         wait_for_completion=True
     )

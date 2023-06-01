@@ -19,9 +19,9 @@ from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.inspection import inspect
 import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
-from Class import common
-from sql import sql_stock
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
+from kopen.Class import common
+from kopen.sql import sql_stock
 from function import get_firstdate_this_m
 
 def ETL_process(**kwargs):
@@ -175,7 +175,7 @@ args = {
     }
 
 with DAG(
-    'Kopen_Stock_db2postgres_dag',
+    'Del_Kopen_Stock_db2postgres_dag',
     default_args=args,
     schedule_interval=None,
     #start_date=datetime(year=2022, month=6, day=1),

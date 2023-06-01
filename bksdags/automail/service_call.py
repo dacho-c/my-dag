@@ -5,7 +5,7 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.http.operators.http import SimpleHttpOperator
 
 import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from function import get_yesterday
 
 default_args = {'start_date': pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),

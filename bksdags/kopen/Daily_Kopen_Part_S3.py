@@ -12,7 +12,7 @@ import pyarrow as pa
 import pandas as pd
 import sqlalchemy
 
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from Class import common
 #from function import get_last_m_datetime
 

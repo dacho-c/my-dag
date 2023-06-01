@@ -13,7 +13,7 @@ import pyarrow as pa
 import pandas as pd
 import sqlalchemy
 
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from Class import common
 from function import get_fisical_year
 from sql import sql_part_sale_head, sql_create_part_sale_head, schema_part_sale_head, columns_part_sale_head, sql_part_sale_detail, sql_create_part_sale_detail, schema_part_sale_detail, columns_part_sale_detail

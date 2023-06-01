@@ -5,7 +5,7 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.http.operators.http import SimpleHttpOperator
 
 import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from function import get_yesterday
 with DAG(
     dag_id='Komtrax_machine_dag',

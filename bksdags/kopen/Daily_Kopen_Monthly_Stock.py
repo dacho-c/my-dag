@@ -24,7 +24,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.inspection import inspect
 import sys, os
 import gc
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from Class import common
 from function import get_last_ym
 

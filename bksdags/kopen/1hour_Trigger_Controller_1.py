@@ -7,7 +7,7 @@ from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime, timezone, timedelta
 import pendulum
 import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from Class import common
 
 def print_task_type(**kwargs):

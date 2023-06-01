@@ -6,7 +6,7 @@ from airflow.models import Variable
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 import sys, os
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from Class import common
 from function import get_last_ym
 

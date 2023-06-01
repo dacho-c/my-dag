@@ -20,8 +20,8 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.inspection import inspect
 import sys, os
 sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
-from kopen.Class import common
-from kopen.sql import sql_stock
+from Class import common
+from sql import sql_stock
 from function import get_firstdate_this_m
 
 def ETL_process(**kwargs):

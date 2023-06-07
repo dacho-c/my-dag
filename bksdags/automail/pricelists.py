@@ -35,7 +35,7 @@ with DAG(
 
     # 2. Auto create report and upload to sharepoint
     task_api_auto_create_report = SimpleHttpOperator(
-        task_id='auto_mail_pricelist',
+        task_id='auto_create_pricelist',
         http_conn_id='bks_api',
         method='GET',
         endpoint='genreport/pricelists',
@@ -53,4 +53,4 @@ with DAG(
         headers={"accept": "application/json"},
     )
 
-    task_is_api_active >> task_Auto_Mail_To_Part
+    task_is_api_active >> task_api_auto_create_report >> task_Auto_Mail_To_Part

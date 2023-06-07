@@ -33,7 +33,17 @@ with DAG(
         mode="reschedule",
     )
 
-    # 2. Auto send mail
+    # 2. Auto create report and upload to sharepoint
+    task_api_auto_create_report = SimpleHttpOperator(
+        task_id='auto_mail_pricelist',
+        http_conn_id='bks_api',
+        method='GET',
+        endpoint='genreport/pricelists',
+        data={"lastdate": get_today()},
+        headers={"accept": "application/json"},
+    )
+
+    # 3. Auto send mail
     task_Auto_Mail_To_Part = SimpleHttpOperator(
         task_id='auto_mail_pricelist',
         http_conn_id='bks_api',

@@ -16,7 +16,7 @@ import sqlalchemy
 sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from Class import common
 #from function import get_fisical_year
-from sql import sql_service_job, sql_create_service_job
+from sql import sql_warranty_claim, sql_create_warranty_claim
 
 def EL_process(**kwargs):
 
@@ -36,10 +36,10 @@ def EL_process(**kwargs):
     common.Del_File(**kwargs)
 
     rows = 0
-    fy = common.get_history_fy('')
-    fy1 = ''
-    sqlstr = sql_service_job(fy,fy1) + C_condition
-    my_schema = '' #schema_service_job_head()
+    #fy = common.get_history_fy('')
+    #fy1 = ''
+    sqlstr = "SELECT * FROM db2admin." + tb_from + C_condition
+    my_schema = '' #schema_warranty_claim_head()
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)
         # Load to DB-LAKE not transfrom
@@ -107,7 +107,7 @@ def ETL_process(**kwargs):
     c_columns = 0
     # ETL ##################################################################
     df = pd.read_parquet(tb_to + '.parquet')
-    strexec = sql_create_service_job(tb_to, primary_key)
+    strexec = sql_create_warranty_claim(tb_to, primary_key)
     #ds_parquet = pq.ParquetDataset(
                 #'/opt/airflow/' + tb_to + '.parquet',
                # filters=[('psh_account_month','>=', get_first_ym_fisical_year())]
@@ -172,43 +172,43 @@ with DAG(
     catchup=False
 ) as dag:
     
-    ################### Service_Job #############################################################################################################
+    ################### Warranty_Claim #############################################################################################################
     t1 = PythonOperator(
-        task_id='el_kopen_service_job_data',
+        task_id='el_kopen_warranty_claim_data',
         provide_context=True,
         python_callable=EL_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': ""}
+        op_kwargs={'From_Table': "WARRANTY_CLAIM", 'To_Table': "kp_warranty_claim", 'Chunk_Size': 50000, 'Key': 'wc_ticket_id', 'Condition': ""}
     )
 
     t2 = PythonOperator(
-        task_id='prepare_kopen_service_job_data',
+        task_id='prepare_kopen_warranty_claim_data',
         provide_context=True,
         python_callable=PP_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where left(smm_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
+        op_kwargs={'From_Table': "WARRANTY_CLAIM", 'To_Table': "kp_warranty_claim", 'Chunk_Size': 50000, 'Key': 'wc_ticket_id', 'Condition': " where left(wc_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
     )
     t2.set_upstream(t1)
 
     t3 = PythonOperator(
-        task_id='copy_service_job_to_s3_data_lake',
+        task_id='copy_warranty_claim_to_s3_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
+        op_kwargs={'From_Table': "WARRANTY_CLAIM", 'To_Table': "kp_warranty_claim", 'Chunk_Size': 50000, 'Key': 'wc_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
     )
     t3.set_upstream(t2)
 
     t4 = PythonOperator(
-        task_id='copy_service_job_to_s3sl_data_lake',
+        task_id='copy_warranty_claim_to_s3sl_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio_sl,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
+        op_kwargs={'From_Table': "WARRANTY_CLAIM", 'To_Table': "kp_warranty_claim", 'Chunk_Size': 50000, 'Key': 'wc_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': common.get_history_fy('')}
     )
     t4.set_upstream(t3)
 
     t5 = PythonOperator(
-        task_id='etl_kopen_service_job_data_lake',
+        task_id='etl_kopen_warranty_claim_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where left(smm_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
+        op_kwargs={'From_Table': "WARRANTY_CLAIM", 'To_Table': "kp_warranty_claim", 'Chunk_Size': 50000, 'Key': 'wc_ticket_id', 'Condition': " where left(wc_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
     )
     t5.set_upstream(t4)
 

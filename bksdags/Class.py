@@ -51,7 +51,10 @@ class common(object):
         return db2strcon
     
     def get_history_fy(self):
-        return Variable.get('historyfy')
+        hfy = Variable.get('historyfy')
+        if hfy == '':
+            hfy = get_fisical_year
+        return hfy
 
     def get_mailto(self):
         return Variable.get('mailto')

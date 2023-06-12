@@ -60,12 +60,19 @@ with DAG(
     )
     t2.set_upstream(t1)
 
+    t3 = TriggerDagRunOperator(
+        task_id="trigger_monthly_stock_dag",
+        trigger_dag_id="Kopen_Monthly_Stock_Daily_db2postgres_dag",
+        wait_for_completion=True
+    )
+    t3.set_upstream(t2)
+
     t4 = TriggerDagRunOperator(
         task_id="trigger_monthly_stock_dag",
         trigger_dag_id="Kopen_Monthly_Stock_Daily_db2postgres_dag",
         wait_for_completion=True
     )
-    t4.set_upstream(t2)
+    t4.set_upstream(t3)
 
     t_end = PythonOperator(
         task_id='end_task',
@@ -80,7 +87,7 @@ with DAG(
         python_callable=common.send_mail,
         op_kwargs={'mtype': 'success', 'msubject': 'ETL AllTaskSuccess 05.30 (Daily)', 'text': 'AllTaskSuccess 05.30 (Daily Kopen) Part, Master Table, Monthly Stock'}
     )
-    AllTaskSuccess.set_upstream([t_start,t1,t2,t4,t_end])
+    AllTaskSuccess.set_upstream([t_start,t1,t2,t3,t4])
     
     t1Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
@@ -88,7 +95,7 @@ with DAG(
         python_callable=common.send_mail,
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Part Task Error 05.30 (Daily)', 'text': 'Part Task Error 05.30 (Daily)'}
     )
-    t1Failed.set_upstream([t1])
+    t1Failed.set_upstream(t1)
     t2.set_upstream(t1Failed)
 
     t2Failed = PythonOperator(
@@ -97,7 +104,17 @@ with DAG(
         python_callable=common.send_mail,
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Master Task Error 05.30 (Daily)', 'text': 'Master Table Task Error 05.30 (Daily)'}
     )
-    t2Failed.set_upstream([t2])
+    t2Failed.set_upstream(t2)
+    t3.set_upstream(t2Failed)
+
+    t3Failed = PythonOperator(
+        trigger_rule=TriggerRule.ONE_FAILED,
+        task_id="t3Failed",
+        python_callable=common.send_mail,
+        op_kwargs={'mtype': 'err', 'msubject': 'ETL Monthly Stock Task Error 05.30 (Daily)', 'text': 'Monthly Stock Task Error 05.30 (Daily)'}
+    )
+    t3Failed.set_upstream(t3)
+    t4.set_upstream(t3Failed)
 
     t4Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
@@ -105,4 +122,5 @@ with DAG(
         python_callable=common.send_mail,
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Monthly Stock Task Error 05.30 (Daily)', 'text': 'Monthly Stock Task Error 05.30 (Daily)'}
     )
-    t4Failed.set_upstream([t4])
+    t4Failed.set_upstream(t4)
+    t_end.set_upstream(t4Failed)

@@ -87,7 +87,7 @@ with DAG(
         python_callable=common.send_mail,
         op_kwargs={'mtype': 'success', 'msubject': 'ETL AllTaskSuccess 05.30 (Daily)', 'text': 'AllTaskSuccess 05.30 (Daily Kopen) Part, Master Table, Monthly Stock'}
     )
-    AllTaskSuccess.set_upstream([t_start,t1,t2,t3,t4])
+    AllTaskSuccess.set_upstream([t1,t2,t3,t4])
     
     t1Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,

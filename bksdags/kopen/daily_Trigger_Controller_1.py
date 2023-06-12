@@ -34,6 +34,7 @@ with DAG(
     '0530-daily-trigger-dag',
     #start_date= airflow.utils.dates.days_ago(0),
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
+    default_view='graph',
     schedule_interval='30 5 * * *',
     default_args=default_args,
     catchup=False
@@ -88,6 +89,7 @@ with DAG(
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Part Task Error 05.30 (Daily)', 'text': 'Part Task Error 05.30 (Daily)'}
     )
     t1Failed.set_upstream([t1])
+    t2.set_upstream(t1Failed)
 
     t2Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,

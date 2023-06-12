@@ -177,7 +177,7 @@ with DAG(
         task_id='el_kopen_warranty_claim_data',
         provide_context=True,
         python_callable=EL_process,
-        op_kwargs={'From_Table': "WARRANTY_CLAIM", 'To_Table': "kp_warranty_claim", 'Chunk_Size': 50000, 'Key': 'wc_ticket_id', 'Condition': ""}
+        op_kwargs={'From_Table': "WARRANTY_CLAIM", 'To_Table': "kp_warranty_claim", 'Chunk_Size': 50000, 'Key': 'wc_ticket_id', 'Condition': " where left(wc_account_month, 4) in ('%s','%s')" % (common.get_history_fy(''), '' )}
     )
 
     t2 = PythonOperator(

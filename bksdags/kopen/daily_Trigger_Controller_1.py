@@ -61,7 +61,7 @@ with DAG(
     t2.set_upstream(t1)
 
     t3 = TriggerDagRunOperator(
-        task_id="trigger_monthly_stock_dag",
+        task_id="trigger_monthly_stock_dag1",
         trigger_dag_id="Kopen_Monthly_Stock_Daily_db2postgres_dag",
         wait_for_completion=True
     )

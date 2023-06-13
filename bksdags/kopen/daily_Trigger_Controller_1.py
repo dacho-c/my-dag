@@ -1,8 +1,8 @@
 import airflow
 from airflow import DAG
+from airflow.operators.dummy import DummyOperator 
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from airflow.operators.email_operator import EmailOperator
 from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime, timezone, timedelta
 import pendulum
@@ -84,8 +84,14 @@ with DAG(
         python_callable=common.send_mail,
         op_kwargs={'mtype': 'success', 'msubject': 'ETL AllTaskSuccess 05.30 (Daily)', 'text': 'AllTaskSuccess 05.30 (Daily Kopen) Part, Master Table, Monthly Stock'}
     )
-    AllTaskSuccess.set_upstream([t1,t2,t3,t4])
-###################################################################################################################################################    
+    AllTaskSuccess.set_upstream([t1,t2,t3,t4,t_end])
+####################################################################################################################################################
+    join_t1 = DummyOperator(
+        task_id='join_t1',
+        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    )
+    t2.set_upstream(join_t1)
+#####################################################################################################################################################
     t1Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
         task_id="t1Failed",
@@ -93,7 +99,7 @@ with DAG(
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Part Task Error 05.30 (Daily)', 'text': 'Part Task Error 05.30 (Daily)'}
     )
     t1Failed.set_upstream(t1)
-    t2.set_upstream(t1Failed)
+    join_t1.set_upstream(t1Failed)
 
     t2Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
@@ -129,7 +135,7 @@ with DAG(
         op_kwargs={'task_type': 't1 to t2'}
     )
     t1ok.set_upstream(t1)
-    t2.set_upstream(t1ok)
+    join_t1.set_upstream(t1ok)
 
     t2ok = PythonOperator(
         trigger_rule=TriggerRule.ONE_SUCCESS,

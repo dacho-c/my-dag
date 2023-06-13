@@ -88,10 +88,31 @@ with DAG(
 ####################################################################################################################################################
     join_t1 = DummyOperator(
         task_id='join_t1',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+        trigger_rule=TriggerRule.ALL_DONE,
     )
     join_t1.set_upstream(t1)
     t2.set_upstream(join_t1)
+
+    join_t2 = DummyOperator(
+        task_id='join_t2',
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+    join_t2.set_upstream(t2)
+    t3.set_upstream(join_t2)
+
+    join_t3 = DummyOperator(
+        task_id='join_t3',
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+    join_t3.set_upstream(t3)
+    t4.set_upstream(join_t3)
+
+    join_t4 = DummyOperator(
+        task_id='join_t4',
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+    join_t4.set_upstream(t4)
+    t_end.set_upstream(join_t4)
 #####################################################################################################################################################
     t1Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
@@ -128,39 +149,3 @@ with DAG(
     )
     t4Failed.set_upstream(t4)
     t_end.set_upstream(t4Failed)
-##################################################################################################################################################
-    #t1ok = PythonOperator(
-    #    trigger_rule=TriggerRule.ONE_SUCCESS,
-    #    task_id='t1ok',
-    #    python_callable=print_task_type,
-    #    op_kwargs={'task_type': 't1 to t2'}
-    #)
-    #t1ok.set_upstream(t1)
-    #join_t1.set_upstream(t1ok)
-
-    t2ok = PythonOperator(
-        trigger_rule=TriggerRule.ONE_SUCCESS,
-        task_id='t2ok',
-        python_callable=print_task_type,
-        op_kwargs={'task_type': 't2 to t3'}
-    )
-    t2ok.set_upstream(t2)
-    t3.set_upstream(t2ok)
-
-    t3ok = PythonOperator(
-        trigger_rule=TriggerRule.ONE_SUCCESS,
-        task_id='t3ok',
-        python_callable=print_task_type,
-        op_kwargs={'task_type': 't3 to t4'}
-    )
-    t3ok.set_upstream(t3)
-    t4.set_upstream(t3ok)
-
-    t4ok = PythonOperator(
-        trigger_rule=TriggerRule.ONE_SUCCESS,
-        task_id='t4ok',
-        python_callable=print_task_type,
-        op_kwargs={'task_type': 't4 to t_end'}
-    )
-    t4ok.set_upstream(t4)
-    t_end.set_upstream(t4ok)

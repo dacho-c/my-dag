@@ -90,6 +90,7 @@ with DAG(
         task_id='join_t1',
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
+    join_t1.set_upstream(t1)
     t2.set_upstream(join_t1)
 #####################################################################################################################################################
     t1Failed = PythonOperator(
@@ -128,14 +129,14 @@ with DAG(
     t4Failed.set_upstream(t4)
     t_end.set_upstream(t4Failed)
 ##################################################################################################################################################
-    t1ok = PythonOperator(
-        trigger_rule=TriggerRule.ONE_SUCCESS,
-        task_id='t1ok',
-        python_callable=print_task_type,
-        op_kwargs={'task_type': 't1 to t2'}
-    )
-    t1ok.set_upstream(t1)
-    join_t1.set_upstream(t1ok)
+    #t1ok = PythonOperator(
+    #    trigger_rule=TriggerRule.ONE_SUCCESS,
+    #    task_id='t1ok',
+    #    python_callable=print_task_type,
+    #    op_kwargs={'task_type': 't1 to t2'}
+    #)
+    #t1ok.set_upstream(t1)
+    #join_t1.set_upstream(t1ok)
 
     t2ok = PythonOperator(
         trigger_rule=TriggerRule.ONE_SUCCESS,

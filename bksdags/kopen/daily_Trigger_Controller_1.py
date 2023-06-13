@@ -80,7 +80,7 @@ with DAG(
         op_kwargs={'task_type': 'ending'}
     )
     t_end.set_upstream(t4)
-
+####################################################################################################################################################
     AllTaskSuccess = PythonOperator(
         trigger_rule=TriggerRule.ALL_SUCCESS,
         task_id="AllTaskSuccess",
@@ -88,7 +88,7 @@ with DAG(
         op_kwargs={'mtype': 'success', 'msubject': 'ETL AllTaskSuccess 05.30 (Daily)', 'text': 'AllTaskSuccess 05.30 (Daily Kopen) Part, Master Table, Monthly Stock'}
     )
     AllTaskSuccess.set_upstream([t1,t2,t3,t4])
-    
+###################################################################################################################################################    
     t1Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
         task_id="t1Failed",
@@ -124,3 +124,39 @@ with DAG(
     )
     t4Failed.set_upstream(t4)
     t_end.set_upstream(t4Failed)
+##################################################################################################################################################
+    t1ok = PythonOperator(
+        trigger_rule=TriggerRule.ONE_SUCCESS,
+        task_id='t1ok',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 't1 to t2'}
+    )
+    t1ok.set_upstream(t1)
+    t2.set_upstream(t1ok)
+
+    t2ok = PythonOperator(
+        trigger_rule=TriggerRule.ONE_SUCCESS,
+        task_id='t2ok',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 't2 to t3'}
+    )
+    t2ok.set_upstream(t2)
+    t3.set_upstream(t2ok)
+
+    t3ok = PythonOperator(
+        trigger_rule=TriggerRule.ONE_SUCCESS,
+        task_id='t3ok',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 't3 to t4'}
+    )
+    t3ok.set_upstream(t3)
+    t4.set_upstream(t3ok)
+
+    t4ok = PythonOperator(
+        trigger_rule=TriggerRule.ONE_SUCCESS,
+        task_id='t4ok',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 't4 to t_end'}
+    )
+    t4ok.set_upstream(t4)
+    t_end.set_upstream(t4ok)

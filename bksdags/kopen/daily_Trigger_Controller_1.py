@@ -130,7 +130,7 @@ with DAG(
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Master Task Error 05.30 (Daily)', 'text': 'Master Table Task Error 05.30 (Daily)'}
     )
     t2Failed.set_upstream(t2)
-    t3.set_upstream(t2Failed)
+    join_t2.set_upstream(t2Failed)
 
     t3Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
@@ -139,7 +139,7 @@ with DAG(
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Monthly Stock Task Error 05.30 (Daily)', 'text': 'Monthly Stock Task Error 05.30 (Daily)'}
     )
     t3Failed.set_upstream(t3)
-    t4.set_upstream(t3Failed)
+    join_t3.set_upstream(t3Failed)
 
     t4Failed = PythonOperator(
         trigger_rule=TriggerRule.ONE_FAILED,
@@ -148,4 +148,4 @@ with DAG(
         op_kwargs={'mtype': 'err', 'msubject': 'ETL Monthly Stock Task Error 05.30 (Daily)', 'text': 'Monthly Stock Task Error 05.30 (Daily)'}
     )
     t4Failed.set_upstream(t4)
-    t_end.set_upstream(t4Failed)
+    join_t4.set_upstream(t4Failed)

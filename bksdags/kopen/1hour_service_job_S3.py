@@ -5,7 +5,7 @@ from airflow.models import DAG
 #from airflow.operators.dummy import DummyOperator 
 from airflow.operators.python import PythonOperator
 from airflow import AirflowException
-#from airflow.utils.trigger_rule import TriggerRule
+from airflow.utils.trigger_rule import TriggerRule
 import sys, os
 import gc
 import pyarrow.parquet as pq
@@ -192,6 +192,7 @@ with DAG(
     t4.set_upstream(t3)
 
     t5 = PythonOperator(
+        trigger_rule=TriggerRule.ALL_DONE,
         task_id='etl_kopen_service_job_data_lake',
         provide_context=True,
         python_callable= ETL_process,

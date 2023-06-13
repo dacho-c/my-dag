@@ -58,28 +58,25 @@ with DAG(
         trigger_dag_id="Kopen_Main_Daily_db2postgres_dag",
         wait_for_completion=True
     )
-    t2.set_upstream(t1)
 
     t3 = TriggerDagRunOperator(
         task_id="trigger_monthly_stock_dag1",
         trigger_dag_id="Kopen_Monthly_Stock_Daily_db2postgres_dag",
         wait_for_completion=True
     )
-    t3.set_upstream(t2)
 
     t4 = TriggerDagRunOperator(
         task_id="trigger_monthly_stock_dag",
         trigger_dag_id="Kopen_Monthly_Stock_Daily_db2postgres_dag",
         wait_for_completion=True
     )
-    t4.set_upstream(t3)
 
     t_end = PythonOperator(
         task_id='end_task',
         python_callable=print_task_type,
         op_kwargs={'task_type': 'ending'}
     )
-    t_end.set_upstream(t4)
+
 ####################################################################################################################################################
     AllTaskSuccess = PythonOperator(
         trigger_rule=TriggerRule.ALL_SUCCESS,

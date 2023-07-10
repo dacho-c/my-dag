@@ -28,7 +28,7 @@ with DAG(
         http_conn_id='bks_api',
         endpoint='genreport/',
         execution_timeout=timedelta(seconds=120),
-        timeout=3600,
+        timeout=360,
         retries=3,
         mode="reschedule",
     )
@@ -42,6 +42,7 @@ with DAG(
         data={"lastdate": get_yesterday()},
         headers={"accept": "application/json"},
     )
+
 
     # 3. Auto send follow up
     task_Auto_Mail_To_Call_Center_follow = SimpleHttpOperator(

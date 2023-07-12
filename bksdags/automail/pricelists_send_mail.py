@@ -28,26 +28,13 @@ with DAG(
         task_id='is_api_active',
         http_conn_id='data_api',
         endpoint='genreport/',
-        execution_timeout=timedelta(seconds=120),
-        timeout=3600,
+        execution_timeout=timedelta(seconds=60),
+        timeout=200,
         retries=3,
         mode="reschedule",
     )
 
-    # 2. Auto create report and upload to sharepoint
-    task_api_auto_create_report = SimpleHttpOperator(
-        task_id='auto_create_pricelist',
-        http_conn_id='data_api',
-        method='GET',
-        endpoint='genreport/pricelists',
-        data={"lastdate": get_today()},
-        headers={"accept": "application/json"},
-    )
-
-    # 2.1 Wait_file_export
-    twait = TimeDeltaSensor(task_id="wait_file_export_arealdy", delta=timedelta(seconds=3000))
-
-    # 3. Auto send mail
+    # 2. Auto send mail
     task_Auto_Mail_To_Part = SimpleHttpOperator(
         task_id='auto_mail_pricelist',
         http_conn_id='data_api',
@@ -57,4 +44,4 @@ with DAG(
         headers={"accept": "application/json"},
     )
 
-    task_is_api_active >> task_api_auto_create_report >> twait >> task_Auto_Mail_To_Part
+    task_is_api_active >> task_Auto_Mail_To_Part

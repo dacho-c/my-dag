@@ -15,9 +15,9 @@ default_args = {'start_date': pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
                 'email': ['dacho-c@bangkokkomatsusales.com'],
                 'email_on_failure': True}
 with DAG(
-    dag_id='Auto_Mail_Weekly_PriceLists_dag',
-    tags=['Auto_Send_Mail'],
-    schedule_interval='6 7 * * 1',
+    dag_id='Auto_Create_Weekly_PriceLists_dag',
+    tags=['Auto_Report'],
+    schedule_interval='1 18 * * 0',
     #start_date=datetime(year=2022, month=6, day=1),
     default_args=default_args,
     catchup=False
@@ -28,8 +28,8 @@ with DAG(
         task_id='is_api_active',
         http_conn_id='data_api',
         endpoint='genreport/',
-        execution_timeout=timedelta(seconds=120),
-        timeout=3600,
+        execution_timeout=timedelta(seconds=60),
+        timeout=200,
         retries=3,
         mode="reschedule",
     )
@@ -45,16 +45,8 @@ with DAG(
     )
 
     # 2.1 Wait_file_export
-    twait = TimeDeltaSensor(task_id="wait_file_export_arealdy", delta=timedelta(seconds=3000))
+    #twait = TimeDeltaSensor(task_id="wait_file_export_arealdy", delta=timedelta(seconds=3000))
 
-    # 3. Auto send mail
-    task_Auto_Mail_To_Part = SimpleHttpOperator(
-        task_id='auto_mail_pricelist',
-        http_conn_id='data_api',
-        method='GET',
-        endpoint='genreport/sendmail_pricelists',
-        data={"lastdate": get_today(),"mailto":"dacho-c@bangkokkomatsusales.com","mailcc":"","mailbcc":""},
-        headers={"accept": "application/json"},
-    )
 
-    task_is_api_active >> task_api_auto_create_report >> twait >> task_Auto_Mail_To_Part
+
+    task_is_api_active >> task_api_auto_create_report

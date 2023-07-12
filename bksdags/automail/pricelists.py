@@ -57,4 +57,4 @@ with DAG(
         headers={"accept": "application/json"},
     )
 
-    task_is_api_active >> task_api_auto_create_report >> task_Auto_Mail_To_Part
+    task_is_api_active >> task_api_auto_create_report >> twait >> task_Auto_Mail_To_Part

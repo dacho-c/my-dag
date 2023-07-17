@@ -26,7 +26,7 @@ with DAG(
     # 1. Check if the API is up
     task_is_api_active = HttpSensor(
         task_id='is_api_active',
-        http_conn_id='data_api',
+        http_conn_id='bks_api',
         endpoint='genreport/',
         execution_timeout=timedelta(seconds=60),
         timeout=200,
@@ -37,7 +37,7 @@ with DAG(
     # 2. Auto send mail
     task_Auto_Mail_To_Part = SimpleHttpOperator(
         task_id='auto_mail_pricelist',
-        http_conn_id='data_api',
+        http_conn_id='bks_api',
         method='GET',
         endpoint='genreport/sendmail_pricelists',
         data={"lastdate": get_today()}, #,"mailto":"","mailcc":"","mailbcc":""

@@ -40,7 +40,7 @@ with DAG(
         http_conn_id='bks_api',
         method='GET',
         endpoint='genreport/sendmail_pricelists',
-        data={"lastdate": get_today()}, #,"mailto":"","mailcc":"","mailbcc":""
+        data={"lastdate": get_today(),"mailto":"sudarat-k@bangkokkomatsusales.com;thanate-p@bangkokkomatsusales.com;"}, #,"mailcc":"","mailbcc":""
         headers={"accept": "application/json"},
     )
 

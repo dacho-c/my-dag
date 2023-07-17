@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import pendulum
+import json
 from airflow.models import DAG
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.http.operators.http import SimpleHttpOperator
@@ -38,10 +39,14 @@ with DAG(
     task_Auto_Mail_To_Part = SimpleHttpOperator(
         task_id='auto_mail_pricelist',
         http_conn_id='bks_api',
-        method='GET',
+        method='POST',
         endpoint='genreport/sendmail_pricelists',
-        data={"lastdate": get_today(),"mailto":"sudarat-k@bangkokkomatsusales.com;thanate-p@bangkokkomatsusales.com;"}, #,"mailcc":"","mailbcc":""
-        headers={"accept": "application/json"},
+        data=json.dumps({"mail_date": get_today(),
+                        "mail_to": "sudarat-k@bangkokkomatsusales.com;thanate-p@bangkokkomatsusales.com;",
+                        "mail_cc": "kitja-t@bangkokkomatsusales.com;",
+                        "mail_bcc": "thitiporn-t@bangkokkomatsusales.com; udomluck-p@bangkokkomatsusales.com; thanakorn-k@bangkokkomatsusales.com; dacho-c@bangkokkomatsusales.com;"}),
+        headers={"Content-Type": "application/json"},
+        #response_check=lambda response: response.json()["json"]["priority"] == 5,
     )
 
     task_is_api_active >> task_Auto_Mail_To_Part

@@ -13,6 +13,15 @@ import sys, os
 sys.path.insert(0,os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 from function import get_today
 
+def set_delay(index):
+    switcher = {
+        "branch": 0, 
+        "department": 60, 
+        "employee": 120, 
+        "product": 780,
+    }
+    return switcher.get(index, 0)
+
 default_args = {'start_date': pendulum.datetime(2023, 1, 1, tz="Asia/Bangkok"),
                 'retries': 1,
                 'retry_delay': timedelta(minutes=5),
@@ -35,9 +44,9 @@ with DAG(
     def check_xcom_output_from_first(val, expected_val):
         assert val == expected_val
 
+
     tables = ["branch", "department", "employee", "product"]
-    times = [0,60,120,720]
-    index = 0
+
     for i in tables:
         
         first = PythonOperator(task_id=f"first_task_{i}", python_callable=xcom_push, op_kwargs={"val": i})
@@ -65,8 +74,7 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
-        time_wait = TimeDeltaSensor(task_id=f"wait_for_export_{i}", delta=timedelta(seconds=times[index]))
-        index = index + 1
+        time_wait = TimeDeltaSensor(task_id=f"wait_for_export_{i}", delta=timedelta(seconds=set_delay(i))
         check_process = PythonOperator(
             task_id=f"check_{i}",
             trigger_rule=TriggerRule.ALL_DONE,

@@ -36,7 +36,7 @@ with DAG(
         assert val == expected_val
 
     tables = ["branch", "department", "employee", "product"]
-    times = [60,60,60,600]
+    times = [0,60,120,720]
     index = 0
     for i in tables:
         
@@ -74,7 +74,7 @@ with DAG(
             op_kwargs={"val": first.output, "expected_val": i},
         )
 
-        first >> check_is_api_active >> call_api_auto_get_db2data >> check_process
+        first >> time_wait >> check_is_api_active >> call_api_auto_get_db2data >> check_process
 
 
     # 2.1 Wait_file_export

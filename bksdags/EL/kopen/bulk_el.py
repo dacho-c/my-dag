@@ -75,7 +75,7 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
-        time_wait = BashOperator(task_id="create_file_after_3_seconds", bash_command=f"sleep {set_delay(i)};")
+        time_wait = BashOperator(task_id=f"wait_for_export_{i}", bash_command=f"sleep {set_delay(i)};")
         check_process = PythonOperator(
             task_id=f"check_{i}",
             trigger_rule=TriggerRule.ALL_DONE,

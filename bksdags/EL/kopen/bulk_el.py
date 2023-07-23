@@ -65,7 +65,7 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
-        time_wait = TimeDeltaSensor(task_id="wait_for_export_{i}", delta=timedelta(seconds=times[index]))
+        time_wait = TimeDeltaSensor(task_id=f"wait_for_export_{i}", delta=timedelta(seconds=times[index]))
         index = index + 1
         check_process = PythonOperator(
             task_id=f"check_{i}",

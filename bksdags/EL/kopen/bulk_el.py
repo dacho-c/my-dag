@@ -16,10 +16,9 @@ from function import get_today
 
 def set_delay(index):
     switcher = {
-        "branch": 0, 
-        "department": 60, 
-        "employee": 120, 
-        "product": 780,
+        "warranty_claim": 30,
+        "warranty_claim_detail2": 60,
+        "product": 90,
     }
     return switcher.get(index, 0)
 
@@ -46,7 +45,7 @@ with DAG(
         assert val == expected_val
 
 
-    tables = ["branch", "department", "employee", "product"]
+    tables = ["branch", "department", "employee", "warranty_claim", "warranty_claim_detail2", "product"]
 
     for i in tables:
         

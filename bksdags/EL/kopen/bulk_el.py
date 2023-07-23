@@ -6,6 +6,7 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
+from airflow.operators.bash import BashOperator
 from airflow.sensors.time_delta import TimeDeltaSensor
 from airflow.operators.dummy_operator import DummyOperator
 
@@ -74,7 +75,7 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
-        time_wait = TimeDeltaSensor(task_id=f"wait_for_export_{i}", delta=timedelta(seconds=set_delay(i)))
+        time_wait = BashOperator(task_id="create_file_after_3_seconds", bash_command=f"sleep {set_delay(i)};")
         check_process = PythonOperator(
             task_id=f"check_{i}",
             trigger_rule=TriggerRule.ALL_DONE,

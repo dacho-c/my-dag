@@ -82,7 +82,7 @@ with DAG(
             op_kwargs={"val": first.output, "expected_val": i},
         )
 
-        first >> time_wait >> check_is_api_active >> call_api_auto_get_db2data >> check_process
+        time_wait >> first >> check_is_api_active >> call_api_auto_get_db2data >> check_process
 
 
     # 2.1 Wait_file_export

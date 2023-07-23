@@ -35,7 +35,7 @@ with DAG(
     def check_xcom_output_from_first(val, expected_val):
         assert val == expected_val
 
-    tables = ["branch", "department", "employee"]
+    tables = ["branch", "department", "employee", "product"]
     for i in tables:
         first = PythonOperator(task_id=f"first_task_{i}", python_callable=xcom_push, op_kwargs={"val": i})
         check_is_api_active = HttpSensor(

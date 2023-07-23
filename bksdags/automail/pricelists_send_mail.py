@@ -42,16 +42,11 @@ with DAG(
         method='POST',
         endpoint='genreport/sendmail_pricelists',
         data=json.dumps({"mail_date": get_today(),
-                        "mail_to": "dacho-c@bangkokkomatsusales.com;bi-it@bangkokkomatsusales.com;",
-                        "mail_cc": "",
-                        "mail_bcc": ""}),
+                        "mail_to": "sudarat-k@bangkokkomatsusales.com;thanate-p@bangkokkomatsusales.com;",
+                        "mail_cc": "kitja-t@bangkokkomatsusales.com;",
+                        "mail_bcc": "thitiporn-t@bangkokkomatsusales.com;udomluck-p@bangkokkomatsusales.com;thanakorn-k@bangkokkomatsusales.com;dacho-c@bangkokkomatsusales.com;"}),
         headers={"Content-Type": "application/json"},
         #response_check=lambda response: response.json()["json"]["priority"] == 5,
-        #data=json.dumps({"mail_date": get_today(),
-                        #"mail_to": "sudarat-k@bangkokkomatsusales.com;thanate-p@bangkokkomatsusales.com;",
-                        #"mail_cc": "kitja-t@bangkokkomatsusales.com;",
-                        #"mail_bcc": "thitiporn-t@bangkokkomatsusales.com; udomluck-p@bangkokkomatsusales.com; thanakorn-k@bangkokkomatsusales.com; dacho-c@bangkokkomatsusales.com;"}),
-        #headers={"Content-Type": "application/json"},
     )
 
     task_is_api_active >> task_Auto_Mail_To_Part

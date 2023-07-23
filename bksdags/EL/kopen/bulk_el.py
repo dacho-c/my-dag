@@ -36,7 +36,10 @@ with DAG(
         assert val == expected_val
 
     tables = ["branch", "department", "employee", "product"]
+    times = [60,60,60,600]
+    index = 0
     for i in tables:
+        
         first = PythonOperator(task_id=f"first_task_{i}", python_callable=xcom_push, op_kwargs={"val": i})
         check_is_api_active = HttpSensor(
             task_id=f'is_api_active_{i}',
@@ -62,6 +65,8 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
+        time_wait = TimeDeltaSensor(task_id="wait_for_export_{i}", delta=timedelta(seconds=times[index]))
+        index = index + 1
         check_process = PythonOperator(
             task_id=f"check_{i}",
             trigger_rule=TriggerRule.ALL_DONE,
@@ -74,6 +79,7 @@ with DAG(
 
     # 2.1 Wait_file_export
     #twait = TimeDeltaSensor(task_id="wait_file_export_arealdy", delta=timedelta(seconds=3000))
+    #sensor = ExternalTaskSensor(task_id='dag_sensor', external_dag_id = 'another_dag_id', external_task_id = None, dag=dag, mode = 'reschedule')
 
 
 

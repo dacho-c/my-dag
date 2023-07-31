@@ -44,7 +44,7 @@ with DAG(
         data=json.dumps({"mail_date": get_today(),
                         "mail_to": "sudarat-k@bangkokkomatsusales.com;thanate-p@bangkokkomatsusales.com;",
                         "mail_cc": "kitja-t@bangkokkomatsusales.com;",
-                        "mail_bcc": "bi-it@bangkokkomatsusales.com;thanakorn-k@bangkokkomatsusales.com;dacho-c@bangkokkomatsusales.com;"}),
+                        "mail_bcc": "thanakorn-k@bangkokkomatsusales.com;dacho-c@bangkokkomatsusales.com;"}),
         headers={"Content-Type": "application/json"},
         #response_check=lambda response: response.json()["json"]["priority"] == 5,
     )

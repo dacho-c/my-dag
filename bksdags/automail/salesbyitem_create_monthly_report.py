@@ -40,13 +40,12 @@ with DAG(
         http_conn_id='data_api',
         method='GET',
         endpoint='genreport/salebyitem',
-        data={"lastdate": get_lastday(), "case": 1},
+        data={"lastdate": get_lastday(1), "case": 1},
         headers={"accept": "application/json"},
     )
 
     # 2.1 Wait_file_export
     #twait = TimeDeltaSensor(task_id="wait_file_export_arealdy", delta=timedelta(seconds=3000))
-
 
 
     task_is_api_active >> task_api_auto_create_report

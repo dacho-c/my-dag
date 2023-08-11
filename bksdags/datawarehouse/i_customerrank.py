@@ -55,10 +55,10 @@ def ETL_process(**kwargs):
         df_miam = df_main.reset_index()
         ##################
         if n == 0:
-            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='replace')
+            df_main.to_sql(tb_to, engine_wh, index=False, if_exists='replace')
             n = n + 1
         else:
-            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='append')
+            df_main.to_sql(tb_to, engine_wh, index=False, if_exists='append')
             n = n + 1
         print(f"Save to data W/H {rows} rows")
     print("ETL Process finished")
@@ -159,6 +159,12 @@ def branch_func(ti):
     else:
         return "create_new_customer_rank_table"
 
+def print_task_type(**kwargs):
+    """
+    Example function to call before and after dependent DAG.
+    """
+    print(f"The {kwargs['task_type']} task has completed.")
+
 with DAG(
     'DWH_ETL_customer_rank_dag',
     schedule_interval=None,
@@ -166,6 +172,18 @@ with DAG(
     start_date=pendulum.datetime(2022, 6, 1, tz="Asia/Bangkok"),
     catchup=False
 ) as dag:
+
+    start_task = PythonOperator(
+        task_id='starting_task',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 'starting'}
+    )
+
+    end_task = PythonOperator(
+        task_id='end_task',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 'ending'}
+    )
 
     # 1. Generate Customer Rank from a DATA LAKE To DATA Warehouse
     task_ET_WH_CustomerRank = PythonOperator(
@@ -209,4 +227,4 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_ET_WH_CustomerRank >> branch_op >> [task_L_WH_CustomerRank,task_RP_WH_CustomerRank] >> branch_join >> task_CL_WH_CustomerRank
+    start_task >> task_ET_WH_CustomerRank >> end_task

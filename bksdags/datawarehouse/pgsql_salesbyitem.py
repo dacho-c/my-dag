@@ -106,7 +106,7 @@ from (SELECT CASE WHEN PIH_APPROVER IN ('018580', '003634', '009313') THEN 'PART
         AND PIH_ACCOUNT_MONTH >= '""" + lym + """' ORDER BY B.PID_TICKET_ID ,B.PID_SERIAL_NO) A"""
     return strsql
 
-def sql_ET_salesbyitem(sym,lym):
+def sql_ET_salesbyitem(sym):
     strsql = """select (PID_TICKET_ID || '-' || PID_SERIAL_NO) as item_id, REGION,PID_TICKET_ID,PIH_ORIGINAL_TKTID,PID_SERIAL_NO,CUSTOMER_ORDER,PID_PRO_KOMCODE,PRO_NAME,PID_SERVICE_NAME,
 DEP_NAME,PRICE_LIST,DISCOUNT,BILLING_RATE,SALEPRICE,UNIT_PRICE,PID_QTY,PID_NOTAX_PRICE,PRICE_VAT,PID_TOTAL_AMOUNT,PID_TOTAL_MONEY,
 PID_TOTAL_TAX,PID_TOTAL_COST,PID_TOTAL_COST_DB,PID_TKTID,PID_BASIC_TTLMONEY,PID_BASIC_TTLAMOUNT,PID_BASIC_TTLTAX,PID_ORI_SERIALNO,
@@ -165,8 +165,8 @@ from (SELECT
         left outer join kp_service_part_supply_head sl on (B.PID_TKTID = sl.SPO_TICKET_ID)
         left outer join kp_SERVICE_QUOTE_HEAD sq on (sl.SPO_S_TICKET_ID = sq.SQH_TICKET_ID)
         left outer join kp_SERVICE_QUOTE_HEAD sq1 on (B.PID_TKTID = sq1.SQH_TICKET_ID)
-        WHERE PIH_ACCOUNT_MONTH >= '{}' AND PIH_ACCOUNT_MONTH <= '{}' AND PIH_STATUS = '1' ORDER BY B.PID_TICKET_ID ,B.PID_SERIAL_NO) A"""
-    return strsql.format(sym,lym)
+        WHERE PIH_ACCOUNT_MONTH >= '{}' AND PIH_STATUS = '1' ORDER BY B.PID_TICKET_ID ,B.PID_SERIAL_NO) A"""
+    return strsql.format(sym)
     
-def sql_DEL_salesbyitem(lym):
-    return "DELETE FROM sales_by_item s where s.pih_account_month >= '%s'" % (lym)
+def sql_DEL_salesbyitem(sym):
+    return "DELETE FROM sales_by_item s where s.pih_account_month >= '%s'" % (sym)

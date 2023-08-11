@@ -22,7 +22,7 @@ import sys, os
 sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
 from Class import common
 
-from function import get_last_ym
+from function import get_last_ym, get_first_ym_fisical_year
 from pgsql_salesbyitem import sql_ET_salesbyitem
 
 def ETL_process(**kwargs):
@@ -53,10 +53,10 @@ def ETL_process(**kwargs):
         # Load & transfrom
         ##################
         if n == 0:
-            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='replace')
+            df_main.to_sql(tb_to, engine_wh, index=False, if_exists='replace')
             n = n + 1
         else:
-            df_main.to_sql(tb_to + "_tmp", engine_wh, index=False, if_exists='append')
+            df_main.to_sql(tb_to, engine_wh, index=False, if_exists='append')
             n = n + 1
         print(f"Save to data W/H {rows} rows")
     print("ETL Process finished")
@@ -157,6 +157,12 @@ def branch_func(ti):
     else:
         return "create_new_sales_by_item_table"
 
+def print_task_type(**kwargs):
+    """
+    Example function to call before and after dependent DAG.
+    """
+    print(f"The {kwargs['task_type']} task has completed.")
+
 with DAG(
     'DWH_ETL_SalesByItem_dag',
     schedule_interval=None,
@@ -165,12 +171,24 @@ with DAG(
     catchup=False
 ) as dag:
 
+    start_task = PythonOperator(
+        task_id='starting_task',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 'starting'}
+    )
+
+    end_task = PythonOperator(
+        task_id='end_task',
+        python_callable=print_task_type,
+        op_kwargs={'task_type': 'ending'}
+    )
+
     # 1. Generate Sales By Item from a DATA LAKE To DATA Warehouse
     task_ETL_WH_SalesByItem = PythonOperator(
         task_id='etl_salesbyitem_from_datalake',
         provide_context=True,
         python_callable=ETL_process,
-        op_kwargs={'To_Table': "sales_by_item", 'Chunk_Size': 50000, 'Condition': get_last_ym()}
+        op_kwargs={'To_Table': "sales_by_item_last_fy", 'Chunk_Size': 50000, 'Condition': get_first_ym_fisical_year()}
     )
 
     # 2. Upsert Sales By Item To DATA Warehouse
@@ -207,4 +225,4 @@ with DAG(
         trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
     )
 
-    task_ETL_WH_SalesByItem >> branch_op >> [task_L_WH_SalesByItem,task_RP_WH_SalesByItem] >> branch_join >> task_CL_WH_SalesByItem
+    start_task >> task_ETL_WH_SalesByItem >> end_task

@@ -191,38 +191,38 @@ with DAG(
         op_kwargs={'To_Table': "stock_end_month", 'Chunk_Size': 50000, 'Condition': ''}
     )
 
-    # 2. Upsert Stock End Month To DATA Warehouse
-    task_L_WH_StockEndMonth = PythonOperator(
-        task_id='upsert_stock_end_month_on_data_warehouse',
-        provide_context=True,
-        python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "stock_end_month",'Key': "item_id"}
-    )
+    ### 2. Upsert Stock End Month To DATA Warehouse
+    ##task_L_WH_StockEndMonth = PythonOperator(
+    ##    task_id='upsert_stock_end_month_on_data_warehouse',
+    ##    provide_context=True,
+    ##    python_callable= UPSERT_process,
+    ##    op_kwargs={'To_Table': "stock_end_month",'Key': "item_id"}
+    ##)
+##
+    ### 3. Replace Stock End Month Temp Table
+    ##task_RP_WH_StockEndMonth = PythonOperator(
+    ##    task_id='create_new_stock_end_month_table',
+    ##    provide_context=True,
+    ##    python_callable= INSERT_bluk,
+    ##    op_kwargs={'To_Table': "stock_end_month",'Key': "item_id"}
+    ##)
+##
+    ### 4. Cleansing Stock End Month Table
+    ##task_CL_WH_StockEndMonth = PythonOperator(
+    ##    task_id='cleansing_stock_end_month_data',
+    ##    provide_context=True,
+    ##    python_callable= Cleansing_process,
+    ##    op_kwargs={'To_Table': "stock_end_month", 'Key': "item_id", 'Condition': ''}
+    ##)
+##
+    ##branch_op = BranchPythonOperator(
+    ##    task_id="check_existing_stock_end_month_on_data_warehouse",
+    ##    python_callable=branch_func,
+    ##)
 
-    # 3. Replace Stock End Month Temp Table
-    task_RP_WH_StockEndMonth = PythonOperator(
-        task_id='create_new_stock_end_month_table',
-        provide_context=True,
-        python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "stock_end_month",'Key': "item_id"}
-    )
-
-    # 4. Cleansing Stock End Month Table
-    task_CL_WH_StockEndMonth = PythonOperator(
-        task_id='cleansing_stock_end_month_data',
-        provide_context=True,
-        python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "stock_end_month", 'Key': "item_id", 'Condition': ''}
-    )
-
-    branch_op = BranchPythonOperator(
-        task_id="check_existing_stock_end_month_on_data_warehouse",
-        python_callable=branch_func,
-    )
-
-    branch_join = DummyOperator(
-        task_id='join',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
+    ##branch_join = DummyOperator(
+    ##    task_id='join',
+    ##    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    ##)
 
     start_task >> task_ETL_WH_StockEndMonth >> end_task

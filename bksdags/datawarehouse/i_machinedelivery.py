@@ -210,38 +210,38 @@ with DAG(
         op_kwargs={'To_Table': "machine_delivery", 'Chunk_Size': 20000, 'Condition': ""} #" where DATE(UR_LASTTIME) >= (current_date - 31) or DATE(CUS_LASTTIME) >= (current_date - 31)"
     )
 
-    # 2. Upsert Machine Delivery To DATA Warehouse
-    task_L_WH_MachineDelivery = PythonOperator(
-        task_id='upsert_machine_delivery_on_data_warehouse',
-        provide_context=True,
-        python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "machine_delivery"}
-    )
-
-    # 3. Replace Machine Delivery Temp Table
-    task_RP_WH_MachineDelivery = PythonOperator(
-        task_id='create_new_machine_delivery_table',
-        provide_context=True,
-        python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "machine_delivery"}
-    )
-
-    # 4. Cleansing Machine Delivery Table
-    task_CL_WH_MachineDelivery = PythonOperator(
-        task_id='cleansing_machine_delivery_data',
-        provide_context=True,
-        python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "machine_delivery", 'Key': "item_id", 'Condition': ""} #" and (DATE(UR_LASTTIME) >= (current_date - 31) or DATE(CUS_LASTTIME) >= (current_date - 31))"
-    )
-
-    branch_op = BranchPythonOperator(
-        task_id="check_existing_machine_delivery_on_data_warehouse",
-        python_callable=branch_func,
-    )
-
-    branch_join = DummyOperator(
-        task_id='join',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
+    ### 2. Upsert Machine Delivery To DATA Warehouse
+    ##task_L_WH_MachineDelivery = PythonOperator(
+    ##    task_id='upsert_machine_delivery_on_data_warehouse',
+    ##    provide_context=True,
+    ##    python_callable= UPSERT_process,
+    ##    op_kwargs={'To_Table': "machine_delivery"}
+    ##)
+##
+    ### 3. Replace Machine Delivery Temp Table
+    ##task_RP_WH_MachineDelivery = PythonOperator(
+    ##    task_id='create_new_machine_delivery_table',
+    ##    provide_context=True,
+    ##    python_callable= INSERT_bluk,
+    ##    op_kwargs={'To_Table': "machine_delivery"}
+    ##)
+##
+    ### 4. Cleansing Machine Delivery Table
+    ##task_CL_WH_MachineDelivery = PythonOperator(
+    ##    task_id='cleansing_machine_delivery_data',
+    ##    provide_context=True,
+    ##    python_callable= Cleansing_process,
+    ##    op_kwargs={'To_Table': "machine_delivery", 'Key': "item_id", 'Condition': ""} #" and (DATE(UR_LASTTIME) >= (current_date - 31) or DATE(CUS_LASTTIME) >= (current_date - 31))"
+    ##)
+##
+    ##branch_op = BranchPythonOperator(
+    ##    task_id="check_existing_machine_delivery_on_data_warehouse",
+    ##    python_callable=branch_func,
+    ##)
+##
+    ##branch_join = DummyOperator(
+    ##    task_id='join',
+    ##    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    ##)
 
     start_task >> task_ET_WH_MachineDelivery >> end_task

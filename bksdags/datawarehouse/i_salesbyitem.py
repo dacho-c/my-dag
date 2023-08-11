@@ -192,37 +192,37 @@ with DAG(
     )
 
     # 2. Upsert Sales By Item To DATA Warehouse
-    task_L_WH_SalesByItem = PythonOperator(
-        task_id='upsert_sales_by_item_on_data_warehouse',
-        provide_context=True,
-        python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "sales_by_item"}
-    )
+    ##task_L_WH_SalesByItem = PythonOperator(
+    ##    task_id='upsert_sales_by_item_on_data_warehouse',
+    ##    provide_context=True,
+    ##    python_callable= UPSERT_process,
+    ##    op_kwargs={'To_Table': "sales_by_item"}
+    ##)
 
     # 3. Replace Sales By Item Temp Table
-    task_RP_WH_SalesByItem = PythonOperator(
-        task_id='create_new_sales_by_item_table',
-        provide_context=True,
-        python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "sales_by_item"}
-    )
+    ##task_RP_WH_SalesByItem = PythonOperator(
+    ##    task_id='create_new_sales_by_item_table',
+    ##    provide_context=True,
+    ##    python_callable= INSERT_bluk,
+    ##    op_kwargs={'To_Table': "sales_by_item"}
+    ##)
 
     # 4. Cleansing Sales By Item Table
-    task_CL_WH_SalesByItem = PythonOperator(
-        task_id='cleansing_sales_by_item_data',
-        provide_context=True,
-        python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "sales_by_item", 'Key': "item_id", 'Condition': get_last_ym()}
-    )
+    ##task_CL_WH_SalesByItem = PythonOperator(
+    ##    task_id='cleansing_sales_by_item_data',
+    ##    provide_context=True,
+    ##    python_callable= Cleansing_process,
+    ##    op_kwargs={'To_Table': "sales_by_item", 'Key': "item_id", 'Condition': get_last_ym()}
+    ##)
 
-    branch_op = BranchPythonOperator(
-        task_id="check_existing_sales_by_item_on_data_warehouse",
-        python_callable=branch_func,
-    )
+    ##branch_op = BranchPythonOperator(
+    ##    task_id="check_existing_sales_by_item_on_data_warehouse",
+    ##    python_callable=branch_func,
+    ##)
 
-    branch_join = DummyOperator(
-        task_id='join',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
+    ##branch_join = DummyOperator(
+    ##    task_id='join',
+    ##    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    ##)
 
     start_task >> task_ETL_WH_SalesByItem >> end_task

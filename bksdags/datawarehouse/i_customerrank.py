@@ -194,37 +194,37 @@ with DAG(
     )
 
     # 2. Upsert Customer Rank To DATA Warehouse
-    task_L_WH_CustomerRank = PythonOperator(
-        task_id='upsert_customer_rank_on_data_warehouse',
-        provide_context=True,
-        python_callable= UPSERT_process,
-        op_kwargs={'To_Table': "customer_rank"}
-    )
-
-    # 3. Replace Customer Rank Temp Table
-    task_RP_WH_CustomerRank = PythonOperator(
-        task_id='create_new_customer_rank_table',
-        provide_context=True,
-        python_callable= INSERT_bluk,
-        op_kwargs={'To_Table': "customer_rank"}
-    )
-
-    # 4. Cleansing Customer Rank Table
-    task_CL_WH_CustomerRank = PythonOperator(
-        task_id='cleansing_customer_rank_data',
-        provide_context=True,
-        python_callable= Cleansing_process,
-        op_kwargs={'To_Table': "customer_rank", 'Key': "cus_id", 'Condition': ""}
-    )
-
-    branch_op = BranchPythonOperator(
-        task_id="check_existing_customer_rank_on_data_warehouse",
-        python_callable=branch_func,
-    )
-
-    branch_join = DummyOperator(
-        task_id='join',
-        trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
-    )
+    ##task_L_WH_CustomerRank = PythonOperator(
+    ##    task_id='upsert_customer_rank_on_data_warehouse',
+    ##    provide_context=True,
+    ##    python_callable= UPSERT_process,
+    ##    op_kwargs={'To_Table': "customer_rank"}
+    ##)
+##
+    ### 3. Replace Customer Rank Temp Table
+    ##task_RP_WH_CustomerRank = PythonOperator(
+    ##    task_id='create_new_customer_rank_table',
+    ##    provide_context=True,
+    ##    python_callable= INSERT_bluk,
+    ##    op_kwargs={'To_Table': "customer_rank"}
+    ##)
+##
+    ### 4. Cleansing Customer Rank Table
+    ##task_CL_WH_CustomerRank = PythonOperator(
+    ##    task_id='cleansing_customer_rank_data',
+    ##    provide_context=True,
+    ##    python_callable= Cleansing_process,
+    ##    op_kwargs={'To_Table': "customer_rank", 'Key': "cus_id", 'Condition': ""}
+    ##)
+##
+    ##branch_op = BranchPythonOperator(
+    ##    task_id="check_existing_customer_rank_on_data_warehouse",
+    ##    python_callable=branch_func,
+    ##)
+##
+    ##branch_join = DummyOperator(
+    ##    task_id='join',
+    ##    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
+    ##)
 
     start_task >> task_ET_WH_CustomerRank >> end_task

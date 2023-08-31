@@ -16,9 +16,9 @@ from function import get_today
 
 def set_delay(index):
     switcher = {
-        "warranty_claim": 30,
-        "warranty_claim_detail2": 60,
-        "product": 90,
+        "warranty_claim": 1,
+        "warranty_claim_detail2": 31,
+        "claim_result": 61,
     }
     return switcher.get(index, 0)
 
@@ -28,9 +28,9 @@ default_args = {'start_date': pendulum.datetime(2023, 1, 1, tz="Asia/Bangkok"),
                 'email': ['dacho-c@bangkokkomatsusales.com'],
                 'email_on_failure': True}
 with DAG(
-    dag_id='Auto_Get_Daily_db2_S3_dag',
+    dag_id='Auto_Get_Daily_Claim_db2_S3_dag',
     tags=['Auto_Daily'],
-    schedule_interval='1 21 * * *',
+    schedule_interval='21 21 * * *',
     default_args=default_args,
     catchup=False
 ) as dag:
@@ -45,7 +45,7 @@ with DAG(
         assert val == expected_val
 
 
-    tables = ["branch", "department", "employee", "warranty_claim", "warranty_claim_detail2", "product"]
+    tables = ["warranty_claim", "warranty_claim_detail2", "claim_result"]
 
     for i in tables:
         

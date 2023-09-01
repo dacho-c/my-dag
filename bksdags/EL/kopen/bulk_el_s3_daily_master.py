@@ -17,7 +17,7 @@ from function import get_today
 def set_delay(index):
     switcher = {
         "product": 20,
-        "revenue_type": 40, 
+        "bks_revenue_type": 40, 
         "bks_part_monitor": 42, 
         #"bks_sok_part": 44, 
         "bks_all_main_filter": 44,
@@ -26,11 +26,11 @@ def set_delay(index):
         "bks_target_mining": 50, 
         "unit_basic": 52, 
         "customer_address": 54, 
-        "product_class": 63, 
-        "idbooks": 67, 
-        "serv_business_code": 69, 
-        "warehouse": 71,
-        "monthly_stock_analysis": 73
+        "product_class": 73, 
+        "idbooks": 97, 
+        "serv_business_code": 99, 
+        "warehouse": 101,
+        "monthly_stock_analysis": 103
     }
     return switcher.get(index, 0)
 
@@ -57,7 +57,7 @@ with DAG(
         assert val == expected_val
 
 
-    tables = ["branch", "department", "employee", "product", "revenue_type", "bks_part_monitor", "bks_all_main_filter", "bks_part_demand", "bks_target", "bks_target_mining", "unit_basic", "customer_address", "product_class", "idbooks", "serv_business_code", "warehouse", "monthly_stock_analysis"]
+    tables = ["branch", "department", "employee", "product", "bks_revenue_type", "bks_part_monitor", "bks_all_main_filter", "bks_part_demand", "bks_target", "bks_target_mining", "unit_basic", "customer_address", "product_class", "idbooks", "serv_business_code", "warehouse", "monthly_stock_analysis"]
     #"bks_sok_part", 
     for i in tables:
         

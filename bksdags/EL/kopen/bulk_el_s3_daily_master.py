@@ -63,7 +63,7 @@ with DAG(
 
     for i in tables:
         
-        first = PythonOperator(task_id=f"first_task_{i}", python_callable=xcom_push, op_kwargs={"val": i})
+        first = PythonOperator(task_id=f"first_task_master_{i}", python_callable=xcom_push, op_kwargs={"val": i})
         check_is_api_active = HttpSensor(
             task_id=f'is_api_active_{i}',
             http_conn_id='data_api',

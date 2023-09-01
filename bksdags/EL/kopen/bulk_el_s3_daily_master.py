@@ -19,14 +19,14 @@ def set_delay(index):
         "product": 20,
         "revenue_type": 40, 
         "bks_part_monitor": 42, 
-        "bks_sok_part": 44, 
-        "bks_all_main_filter": 50,
-        "bks_part_demand": 52, 
-        "bks_target": 54, 
-        "bks_target_mining": 56, 
-        "unit_basic": 58, 
-        "customer_address": 60, 
-        "product_class": 65, 
+        #"bks_sok_part": 44, 
+        "bks_all_main_filter": 44,
+        "bks_part_demand": 46, 
+        "bks_target": 48, 
+        "bks_target_mining": 50, 
+        "unit_basic": 52, 
+        "customer_address": 54, 
+        "product_class": 63, 
         "idbooks": 67, 
         "serv_business_code": 69, 
         "warehouse": 71,
@@ -57,8 +57,8 @@ with DAG(
         assert val == expected_val
 
 
-    tables = ["branch", "department", "employee", "product", "revenue_type", "bks_part_monitor", "bks_sok_part", "bks_all_main_filter", "bks_part_demand", "bks_target", "bks_target_mining", "unit_basic", "customer_address", "product_class", "idbooks", "serv_business_code", "warehouse", "monthly_stock_analysis"]
-
+    tables = ["branch", "department", "employee", "product", "revenue_type", "bks_part_monitor", "bks_all_main_filter", "bks_part_demand", "bks_target", "bks_target_mining", "unit_basic", "customer_address", "product_class", "idbooks", "serv_business_code", "warehouse", "monthly_stock_analysis"]
+    #"bks_sok_part", 
     for i in tables:
         
         first = PythonOperator(task_id=f"first_task_master_{i}", python_callable=xcom_push, op_kwargs={"val": i})

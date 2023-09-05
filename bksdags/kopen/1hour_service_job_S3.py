@@ -160,14 +160,14 @@ with DAG(
 
     ################### Service Job - 2 FY #############################################################################################################
     t001 = PythonOperator(
-        task_id='el_kopen_service_job_data',
+        task_id='el_kopen_service_job_data1',
         provide_context=True,
         python_callable=EL_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 2, int(get_fisical_year()) - 1)}
     )
 
     t002 = PythonOperator(
-        task_id='prepare_kopen_service_job_data',
+        task_id='prepare_kopen_service_job_data1',
         provide_context=True,
         python_callable=PP_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 2, int(get_fisical_year()) - 1)}
@@ -175,7 +175,7 @@ with DAG(
     t002.set_upstream(t001)
 
     t003 = PythonOperator(
-        task_id='copy_service_job_to_s3_data_lake',
+        task_id='copy_service_job_to_s3_data_lake1',
         provide_context=True,
         python_callable= common.copy_to_minio,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 2}
@@ -183,7 +183,7 @@ with DAG(
     t003.set_upstream(t002)
 
     t004 = PythonOperator(
-        task_id='copy_service_job_to_s3sl_data_lake',
+        task_id='copy_service_job_to_s3sl_data_lake1',
         provide_context=True,
         python_callable= common.copy_to_minio_sl,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 2}
@@ -192,7 +192,7 @@ with DAG(
 
     t005 = PythonOperator(
         trigger_rule=TriggerRule.ALL_DONE,
-        task_id='etl_kopen_service_job_data_lake',
+        task_id='etl_kopen_service_job_data_lake1',
         provide_context=True,
         python_callable= ETL_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 2, int(get_fisical_year()) - 1)}
@@ -201,7 +201,7 @@ with DAG(
 
     ################### Service Job - 1 FY #############################################################################################################
     t01 = PythonOperator(
-        task_id='el_kopen_service_job_data',
+        task_id='el_kopen_service_job_data2',
         provide_context=True,
         python_callable=EL_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 1, get_fisical_year())}
@@ -209,7 +209,7 @@ with DAG(
     t01.set_upstream(t005)
 
     t02 = PythonOperator(
-        task_id='prepare_kopen_service_job_data',
+        task_id='prepare_kopen_service_job_data2',
         provide_context=True,
         python_callable=PP_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 1, get_fisical_year())}
@@ -217,7 +217,7 @@ with DAG(
     t02.set_upstream(t01)
 
     t03 = PythonOperator(
-        task_id='copy_service_job_to_s3_data_lake',
+        task_id='copy_service_job_to_s3_data_lake2',
         provide_context=True,
         python_callable= common.copy_to_minio,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 1}
@@ -225,7 +225,7 @@ with DAG(
     t03.set_upstream(t02)
 
     t04 = PythonOperator(
-        task_id='copy_service_job_to_s3sl_data_lake',
+        task_id='copy_service_job_to_s3sl_data_lake2',
         provide_context=True,
         python_callable= common.copy_to_minio_sl,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 1}
@@ -234,7 +234,7 @@ with DAG(
 
     t05 = PythonOperator(
         trigger_rule=TriggerRule.ALL_DONE,
-        task_id='etl_kopen_service_job_data_lake',
+        task_id='etl_kopen_service_job_data_lake2',
         provide_context=True,
         python_callable= ETL_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 1, get_fisical_year())}
@@ -243,7 +243,7 @@ with DAG(
 
     ################### Service Job #############################################################################################################
     t1 = PythonOperator(
-        task_id='el_kopen_service_job_data',
+        task_id='el_kopen_service_job_data3',
         provide_context=True,
         python_callable=EL_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
@@ -251,7 +251,7 @@ with DAG(
     t1.set_upstream(t05)
 
     t2 = PythonOperator(
-        task_id='prepare_kopen_service_job_data',
+        task_id='prepare_kopen_service_job_data3',
         provide_context=True,
         python_callable=PP_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
@@ -259,7 +259,7 @@ with DAG(
     t2.set_upstream(t1)
 
     t3 = PythonOperator(
-        task_id='copy_service_job_to_s3_data_lake',
+        task_id='copy_service_job_to_s3_data_lake3',
         provide_context=True,
         python_callable= common.copy_to_minio,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': get_fisical_year()}
@@ -276,7 +276,7 @@ with DAG(
 
     t5 = PythonOperator(
         trigger_rule=TriggerRule.ALL_DONE,
-        task_id='etl_kopen_service_job_data_lake',
+        task_id='etl_kopen_service_job_data_lake3',
         provide_context=True,
         python_callable= ETL_process,
         op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (get_fisical_year(), int(get_fisical_year()) + 1 )}

@@ -36,9 +36,8 @@ def EL_process(**kwargs):
     common.Del_File(**kwargs)
 
     rows = 0
-    fy = get_fisical_year()
-    fy1 = (int(fy) + 1)
-    sqlstr = sql_service_job(fy,fy1) + C_condition
+    
+    sqlstr = sql_service_job() + C_condition
     my_schema = ''
     for chunk_df in pd.read_sql(sqlstr, conn_db2 ,chunksize=c_size):
         rows += len(chunk_df)
@@ -159,19 +158,103 @@ with DAG(
     catchup=False
 ) as dag:
 
+    ################### Service Job - 2 FY #############################################################################################################
+    t001 = PythonOperator(
+        task_id='el_kopen_service_job_data',
+        provide_context=True,
+        python_callable=EL_process,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 2, int(get_fisical_year()) - 1)}
+    )
+
+    t002 = PythonOperator(
+        task_id='prepare_kopen_service_job_data',
+        provide_context=True,
+        python_callable=PP_process,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 2, int(get_fisical_year()) - 1)}
+    )
+    t002.set_upstream(t001)
+
+    t003 = PythonOperator(
+        task_id='copy_service_job_to_s3_data_lake',
+        provide_context=True,
+        python_callable= common.copy_to_minio,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 2}
+    )
+    t003.set_upstream(t002)
+
+    t004 = PythonOperator(
+        task_id='copy_service_job_to_s3sl_data_lake',
+        provide_context=True,
+        python_callable= common.copy_to_minio_sl,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 2}
+    )
+    t004.set_upstream(t003)
+
+    t005 = PythonOperator(
+        trigger_rule=TriggerRule.ALL_DONE,
+        task_id='etl_kopen_service_job_data_lake',
+        provide_context=True,
+        python_callable= ETL_process,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 2, int(get_fisical_year()) - 1)}
+    )
+    t005.set_upstream(t004)
+
+    ################### Service Job - 1 FY #############################################################################################################
+    t01 = PythonOperator(
+        task_id='el_kopen_service_job_data',
+        provide_context=True,
+        python_callable=EL_process,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 1, get_fisical_year())}
+    )
+    t01.set_upstream(t005)
+
+    t02 = PythonOperator(
+        task_id='prepare_kopen_service_job_data',
+        provide_context=True,
+        python_callable=PP_process,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 1, get_fisical_year())}
+    )
+    t02.set_upstream(t01)
+
+    t03 = PythonOperator(
+        task_id='copy_service_job_to_s3_data_lake',
+        provide_context=True,
+        python_callable= common.copy_to_minio,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 1}
+    )
+    t03.set_upstream(t02)
+
+    t04 = PythonOperator(
+        task_id='copy_service_job_to_s3sl_data_lake',
+        provide_context=True,
+        python_callable= common.copy_to_minio_sl,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': int(get_fisical_year()) - 1}
+    )
+    t04.set_upstream(t03)
+
+    t05 = PythonOperator(
+        trigger_rule=TriggerRule.ALL_DONE,
+        task_id='etl_kopen_service_job_data_lake',
+        provide_context=True,
+        python_callable= ETL_process,
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (int(get_fisical_year()) - 1, get_fisical_year())}
+    )
+    t05.set_upstream(t04)
+
     ################### Service Job #############################################################################################################
     t1 = PythonOperator(
         task_id='el_kopen_service_job_data',
         provide_context=True,
         python_callable=EL_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': ""}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
     )
+    t1.set_upstream(t05)
 
     t2 = PythonOperator(
         task_id='prepare_kopen_service_job_data',
         provide_context=True,
         python_callable=PP_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where left(smm_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
     )
     t2.set_upstream(t1)
 
@@ -179,7 +262,7 @@ with DAG(
         task_id='copy_service_job_to_s3_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 365, 'FY': ''}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': get_fisical_year()}
     )
     t3.set_upstream(t2)
 
@@ -187,7 +270,7 @@ with DAG(
         task_id='copy_service_job_to_s3sl_data_lake',
         provide_context=True,
         python_callable= common.copy_to_minio_sl,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 365, 'FY': ''}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': "", 'Last_Days': 366, 'FY': get_fisical_year()}
     )
     t4.set_upstream(t3)
 
@@ -196,6 +279,6 @@ with DAG(
         task_id='etl_kopen_service_job_data_lake',
         provide_context=True,
         python_callable= ETL_process,
-        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where left(smm_account_month, 4) in ('%s','%s')" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
+        op_kwargs={'From_Table': "SERV_MISSION_MIND", 'To_Table': "kp_service_job", 'Chunk_Size': 50000, 'Key': 'smm_ticket_id', 'Condition': " where smm_account_month >= '%s04' and smm_account_month < '%s04'" % (get_fisical_year(), int(get_fisical_year()) + 1 )}
     )
     t5.set_upstream(t4)

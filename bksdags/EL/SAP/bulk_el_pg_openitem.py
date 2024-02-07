@@ -16,11 +16,10 @@ from function import get_today
 
 def set_delay(index):
     switcher = {
-        "loadsaps3_original_master": 30,
-        "loadsaps3_customer_master": 60,
-        "loadsaps3_customer_address": 90,
-        "loadsaps3_zcustomer": 120,
-        "loadsaps3_zequipment": 150
+        "loadsaps3_notifications": 1,
+        "loadsaps3_Service_order": 21,
+        "loadsaps3_Sales_order": 41,
+        "loadsaps3_Billing": 61
     }
     return switcher.get(index, 0)
 
@@ -30,9 +29,9 @@ default_args = {'start_date': pendulum.datetime(2023, 1, 1, tz="Asia/Bangkok"),
                 'email': ['dacho-c@bangkokkomatsusales.com'],
                 'email_on_failure': True}
 with DAG(
-    dag_id='Auto_EL_Daily_Load_SAP_DataLake_dag',
+    dag_id='Auto_EL_Daily_Load_SAP_Oitems_DataLake_dag',
     tags=['Auto_Daily'],
-    schedule_interval='5 6-13/6 * * 1-5',
+    schedule_interval='15 7-22/1 * * 1-5',
     default_args=default_args,
     catchup=False
 ) as dag:
@@ -47,7 +46,7 @@ with DAG(
         assert val == expected_val
 
 
-    tasks = ["loadsaps3_original_master","loadsaps3_customer_master","loadsaps3_customer_address","loadsaps3_zcustomer","loadsaps3_zequipment"]
+    tasks = ["loadsaps3_notifications","loadsaps3_Service_order","loadsaps3_Sales_order","loadsaps3_Billing"]
 
     for i in tasks:
         

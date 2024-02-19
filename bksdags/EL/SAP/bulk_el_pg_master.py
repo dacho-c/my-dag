@@ -44,22 +44,33 @@ with DAG(
     def check_xcom_output_from_first(val, expected_val):
         assert val == expected_val
 
-
+    i = 'master'
     tasks = ["loadsaps3_original_master","loadsaps3_customer_master","loadsaps3_customer_address"]
 
+    #for i in tasks:
+    #time_wait = BashOperator(task_id=f"wait_for_execute_{i}", bash_command=f"sleep {set_delay(i)};")   
+    time_wait = BashOperator(task_id=f"wait_for_execute_{i}", bash_command=f"sleep {1};")     
+    first = PythonOperator(task_id=f"first_task_pg_{i}", python_callable=xcom_push, op_kwargs={"val": i})
+    check_is_api_active = HttpSensor(
+        task_id=f'is_api_active_{i}',
+        http_conn_id='data_pipeline',
+        endpoint='etl/sap/',
+        execution_timeout=timedelta(seconds=60),
+        timeout=200,
+        retries=3,
+        mode="reschedule",
+    )
+    check_process = PythonOperator(
+        task_id=f"check_{i}",
+        trigger_rule=TriggerRule.ALL_DONE,
+        python_callable=check_xcom_output_from_first,
+        op_kwargs={"val": first.output, "expected_val": i},
+    )
+
+    time_wait >> first >> check_is_api_active
+
     for i in tasks:
-        
-        first = PythonOperator(task_id=f"first_task_pg_{i}", python_callable=xcom_push, op_kwargs={"val": i})
-        check_is_api_active = HttpSensor(
-            task_id=f'is_api_active_{i}',
-            http_conn_id='data_pipeline',
-            endpoint='etl/sap/',
-            execution_timeout=timedelta(seconds=60),
-            timeout=200,
-            retries=3,
-            mode="reschedule",
-        )
-        call_api_auto_el_sap_data = SimpleHttpOperator(
+        op = SimpleHttpOperator(
             task_id=f'auto_EL_{i}',
             http_conn_id='data_pipeline',
             method='POST',
@@ -77,15 +88,7 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
-        time_wait = BashOperator(task_id=f"wait_for_execute_{i}", bash_command=f"sleep {set_delay(i)};")
-        check_process = PythonOperator(
-            task_id=f"check_{i}",
-            trigger_rule=TriggerRule.ALL_DONE,
-            python_callable=check_xcom_output_from_first,
-            op_kwargs={"val": first.output, "expected_val": i},
-        )
-
-        time_wait >> first >> check_is_api_active >> call_api_auto_el_sap_data >> check_process
+        check_is_api_active >> op >> check_process
 
 
     # 2.1 Wait_file_export

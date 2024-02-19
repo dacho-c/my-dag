@@ -7,6 +7,7 @@ from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 from airflow.operators.bash import BashOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.sensors.time_delta import TimeDeltaSensor
 from airflow.operators.dummy_operator import DummyOperator
 
@@ -45,6 +46,7 @@ with DAG(
         assert val == expected_val
 
     i = 'master'
+    j = f'is_api_active_{i}'
     tasks = ["loadsaps3_original_master","loadsaps3_customer_master","loadsaps3_customer_address"]
 
     #for i in tasks:
@@ -62,7 +64,7 @@ with DAG(
     )
     check_process = PythonOperator(
         task_id=f"check_{i}",
-        trigger_rule=TriggerRule.ALL_DONE,
+        trigger_rule=TriggerRule.ALL_SUCCESS,
         python_callable=check_xcom_output_from_first,
         op_kwargs={"val": first.output, "expected_val": i},
     )
@@ -70,6 +72,11 @@ with DAG(
     time_wait >> first >> check_is_api_active
 
     for i in tasks:
+        tg = TriggerDagRunOperator(
+            task_id=f"trigger_{i}",
+            trigger_dag_id= j,
+            wait_for_completion=True
+        )
         op = SimpleHttpOperator(
             task_id=f'auto_EL_{i}',
             http_conn_id='data_pipeline',
@@ -88,7 +95,9 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
-        check_is_api_active >> op >> check_process
+        j = f'auto_EL_{i}'
+        
+        check_is_api_active >> tg >> check_process
 
 
     # 2.1 Wait_file_export

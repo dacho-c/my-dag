@@ -29,7 +29,7 @@ default_args = {'start_date': pendulum.datetime(2023, 1, 1, tz="Asia/Bangkok"),
 with DAG(
     dag_id='Auto_EL_Daily_Load_SAP_Ztable_DataLake_dag',
     tags=['Auto_Daily'],
-    schedule_interval='10 1/3 * * *',
+    schedule_interval='20 0-16/3 * * *',
     default_args=default_args,
     catchup=False
 ) as dag:
@@ -37,28 +37,36 @@ with DAG(
     def xcom_push(val):
         return val
 
-    def choose(val):
-        return f"task_{val}"
-
     def check_xcom_output_from_first(val, expected_val):
         assert val == expected_val
 
 
     tasks = ["loadsaps3_zcustomer","loadsaps3_zequipment"]
 
+    first = PythonOperator(task_id="first_task_sap_el", python_callable=xcom_push, op_kwargs={"val": 'pass'})
+    check_is_api_active = HttpSensor(
+        task_id='is_api_active',
+        http_conn_id='data_pipeline',
+        endpoint='etl/sap/',
+        execution_timeout=timedelta(seconds=60),
+        timeout=200,
+        retries=3,
+        mode="reschedule",
+    )
+    check_process = PythonOperator(
+        task_id="check_all_process",
+        trigger_rule=TriggerRule.ALL_SUCCESS,
+        python_callable=check_xcom_output_from_first,
+        op_kwargs={"val": first.output, "expected_val": 'pass'},
+    )
+
+    first >> check_is_api_active
+
     for i in tasks:
-        
-        first = PythonOperator(task_id=f"first_task_pg_{i}", python_callable=xcom_push, op_kwargs={"val": i})
-        check_is_api_active = HttpSensor(
-            task_id=f'is_api_active_{i}',
-            http_conn_id='data_pipeline',
-            endpoint='etl/sap/',
-            execution_timeout=timedelta(seconds=60),
-            timeout=200,
-            retries=3,
-            mode="reschedule",
-        )
-        call_api_auto_el_sap_data = SimpleHttpOperator(
+
+        time_wait = BashOperator(task_id=f"wait_for_execute_{i}", bash_command=f"sleep {set_delay(i)};")   
+
+        op = SimpleHttpOperator(
             task_id=f'auto_EL_{i}',
             http_conn_id='data_pipeline',
             method='POST',
@@ -76,15 +84,8 @@ with DAG(
                 }),
             headers={"accept": "application/json"},
         )
-        time_wait = BashOperator(task_id=f"wait_for_execute_{i}", bash_command=f"sleep {set_delay(i)};")
-        check_process = PythonOperator(
-            task_id=f"check_{i}",
-            trigger_rule=TriggerRule.ALL_DONE,
-            python_callable=check_xcom_output_from_first,
-            op_kwargs={"val": first.output, "expected_val": i},
-        )
 
-        time_wait >> first >> check_is_api_active >> call_api_auto_el_sap_data >> check_process
+        check_is_api_active >> time_wait >> op >> check_process
 
 
     # 2.1 Wait_file_export

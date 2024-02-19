@@ -17,8 +17,9 @@ from function import get_today
 def set_delay(index):
     switcher = {
         "loadsaps3_original_master": 1,
-        "loadsaps3_customer_master": 20,
-        "loadsaps3_customer_address": 80,
+        "loadsaps3_customer_master": 61,
+        "loadsaps3_customer_address": 121, 
+        # + 150
     }
     return switcher.get(index, 0)
 
@@ -30,7 +31,7 @@ default_args = {'start_date': pendulum.datetime(2023, 1, 1, tz="Asia/Bangkok"),
 with DAG(
     dag_id='Auto_EL_Daily_Load_SAP_Master_DataLake_dag',
     tags=['Auto_Daily'],
-    schedule_interval='5 19/3 * * *',
+    schedule_interval='30 0-16/3 * * *',
     default_args=default_args,
     catchup=False
 ) as dag:

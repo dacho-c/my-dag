@@ -31,7 +31,7 @@ default_args = {'start_date': pendulum.datetime(2023, 1, 1, tz="Asia/Bangkok"),
 with DAG(
     dag_id='Auto_EL_Daily_Load_SAP_Master_DataLake_dag',
     tags=['Auto_Daily'],
-    schedule_interval='30 7-22/3 * * *',
+    schedule_interval='30 1-22/3 * * *',
     default_args=default_args,
     catchup=False
 ) as dag:

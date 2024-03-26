@@ -39,7 +39,7 @@ default_args = {'start_date': pendulum.datetime(2023, 1, 1, tz="Asia/Bangkok"),
 with DAG(
     dag_id='Auto_ETL_Daily_DBcenter_dag',
     tags=['Auto_Daily'],
-    schedule_interval='45 1-22/1 * * *',
+    schedule_interval='45 1-19/1 * * *',
     default_args=default_args,
     catchup=False
 ) as dag:

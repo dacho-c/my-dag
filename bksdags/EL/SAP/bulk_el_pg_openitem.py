@@ -19,7 +19,8 @@ def set_delay(index):
         "loadsaps3_notifications": 1,
         "loadsaps3_Service_order": 8,
         "loadsaps3_Sales_order": 68,
-        "loadsaps3_Billing": 148
+        "loadsaps3_Billing": 148,
+        "loadsaps3_part_reservation_withdrow": 268
         # + 120
     }
     return switcher.get(index, 0)
@@ -44,7 +45,7 @@ with DAG(
         assert val == expected_val
 
 
-    tasks = ["loadsaps3_notifications","loadsaps3_Service_order","loadsaps3_Sales_order","loadsaps3_Billing"]
+    tasks = ["loadsaps3_notifications","loadsaps3_Service_order","loadsaps3_Sales_order","loadsaps3_Billing","loadsaps3_part_reservation_withdrow"]
 
     first = PythonOperator(task_id="first_task_sap_el", python_callable=xcom_push, op_kwargs={"val": 'pass'})
     check_is_api_active = HttpSensor(
